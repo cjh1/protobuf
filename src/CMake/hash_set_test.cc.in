@@ -1,0 +1,8 @@
+#include <@LOCATION@>
+int main ()
+{
+ @NAMESPACE@::@CLASSNAME@<int, int> const m;
+ m.find(1);
+ return 0;
+}
+

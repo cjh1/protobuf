@@ -67,22 +67,44 @@ endforeach(NAMESPACE)
 if (SUCCEED)
  # Namespace of hash_map/hash_set
  set(HASH_NAMESPACE ${NAMESPACE})
-
  # Define if the compiler has hash_map
  set(HAVE_HASH_MAP 1)
  # Location of <hash_map> file
  set(HASH_MAP_H ${LOCATION})
  # Class name of the <hash_map>
  set(HASH_MAP_CLASS ${CLASSNAME})
+endif ()
 
- # # Change all *map* into *set*
+# Repeat the same thing for hash_set
+foreach(NAMESPACE std::tr1 __gnu_cxx "" std stdext)
+ foreach(LOCATION tr1/unordered_set ext/hash_set hash_set)
+  foreach(CLASSNAME unordered_set hash_set)
+   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/CMake/hash_test.cc.in
+                  ${CMAKE_CURRENT_BINARY_DIR}/CMake/hash_test.cc
+                  @ONLY)
+   try_compile(SUCCEED
+               ${CMAKE_CURRENT_BINARY_DIR}/CMake
+               ${CMAKE_CURRENT_BINARY_DIR}/CMake/hash_test.cc)
+   if (SUCCEED)
+    break()
+   endif()
+  endforeach(CLASSNAME)
+  if (SUCCEED)
+   break()
+  endif()
+ endforeach(LOCATION)
+ if (SUCCEED)
+  break()
+ endif()
+endforeach(NAMESPACE)
 
- # # Define if the compiler has hash_set
- # set(HAVE_HASH_SET 1)
- # # Location of <hash_set> file
- # set(HASH_SET_H, ${LOCATION})
- # # Class name of <hash_set>
- # set(HASH_SET_CLASS ${CLASSNAME})
+if (SUCCEED)
+ # Define if the compiler has hash_set
+ set(HAVE_HASH_SET 1)
+ # Location of <hash_set> file
+ set(HASH_SET_H, ${LOCATION})
+ # Class name of <hash_set>
+ set(HASH_SET_CLASS ${CLASSNAME})
 endif ()
 
 # Enable classes using zlib compression
@@ -120,6 +142,10 @@ CHECK_INCLUDE_FILE("stddef.h" HAVE_STDDEF_H)
 if (HAVE_STDLIB_H AND HAVE_STDDEF_H)
  set(STDC_HEADERS 1)
 endif ()
+
+# Config config.h.cmake.in
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake.in
+               ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
 # Targets
 # 1 : libprotobuf
@@ -167,7 +193,7 @@ set(LIBPROTOBUF_SOURCES
  google/protobuf/compiler/importer.cc
  google/protobuf/compiler/parser.cc
  )
-set(LIBPROTOBUF_INCLUDES ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/..)
+set(LIBPROTOBUF_INCLUDES ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/..)
 
 add_library(protobuf SHARED ${LIBPROTOBUF_SOURCES})
 include_directories(${LIBPROTOBUF_INCLUDES})
@@ -232,7 +258,7 @@ set(LIBPROTOC_SOURCES
  google/protobuf/compiler/java/java_service.h
  google/protobuf/compiler/python/python_generator.cc
  )
-set(LIBPROTOC_INCLUDES ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/..)
+# set(LIBPROTOC_INCLUDES ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/..)
 set(LIBPROTOC_LIBRARY_INCLUDES ${LIBRARY_OUTPUT_PATH})
 
 add_library(protoc SHARED ${LIBPROTOC_SOURCES})
@@ -244,11 +270,11 @@ set_target_properties(protoc PROPERTIES
 target_link_libraries(protoc pthread protobuf)
 
 # Target 3
-project(protoc_test)
 set(PROTOC_SOURCES google/protobuf/compiler/main.cc)
-add_executable(protoc_test ${PROTOC_SOURCES})
+add_executable(protoc_compiler ${PROTOC_SOURCES})
+set_target_properties(protoc_compiler PROPERTIES
+                      LINK_FLAGS      -pthread
+                      CMAKE_CXX_FLAGS -pthread
+                      OUTPUT_NAME protoc)
 link_directories(${LIBRARY_OUTPUT_PATH})
-# set_target_properties(protoc PROPERTIES
-#                       LINK_FLAGS      -pthread
-#                       CMAKE_CXX_FLAGS -pthread)
-target_link_libraries(protoc_test pthread protoc)
+target_link_libraries(protoc_compiler pthread protoc)
