@@ -5,29 +5,29 @@
  * (3) Delete all entries that are not referred in the source code.
  */
 
-/* the name of <hash_set> */
-#cmakedefine HASH_MAP_CLASS
+/* the namespace of hash_map/hash_set */
+#cmakedefine HASH_NAMESPACE @HASH_NAMESPACE@
+
+/* define if the compiler has hash_map */
+#cmakedefine01 HAVE_HASH_MAP
+
+/* the name of <hash_map> */
+#cmakedefine HASH_MAP_CLASS @HASH_MAP_CLASS@
 
 /* the location of <hash_map> */
-#cmakedefine HASH_MAP_H
+#cmakedefine HASH_MAP_H <@HASH_MAP_H@>
 
-/* the namespace of hash_map/hash_set */
-#cmakedefine HASH_NAMESPACE
+/* define if the compiler has hash_set */
+#cmakedefine01 HAVE_HASH_SET
 
 /* the name of <hash_set> */
-#cmakedefine HASH_SET_CLASS
+#cmakedefine HASH_SET_CLASS @HASH_SET_CLASS@
 
 /* the location of <hash_set> */
-#cmakedefine HASH_SET_H
+#cmakedefine HASH_SET_H <@HASH_SET_H@>
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #cmakedefine01 HAVE_DLFCN_H
-
-/* define if the compiler has hash_map */
-#cmakedefine HAVE_HASH_MAP
-
-/* define if the compiler has hash_set */
-#cmakedefine HAVE_HASH_SET
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #cmakedefine01 HAVE_INTTYPES_H
@@ -36,7 +36,7 @@
 #cmakedefine01 HAVE_MEMORY_H
 
 /* Define if you have POSIX threads libraries and header files. */
-#cmakedefine HAVE_PTHREAD
+#cmakedefine01 HAVE_PTHREAD
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #cmakedefine01 HAVE_STDINT_H
@@ -56,40 +56,40 @@
 /* Define to 1 if you have the <sys/types.h> header file. */
 #cmakedefine01 HAVE_SYS_TYPES_H
 
-/* Define to01 1 if you have the <unistd.h> header file. */
-#cmakedefine HAVE_UNISTD_H
+/* Define to 1 if you have the <unistd.h> header file. */
+#cmakedefine01 HAVE_UNISTD_H
 
 /* Enable classes using zlib compression. */
-#cmakedefine HAVE_ZLIB
+#cmakedefine01 HAVE_ZLIB
 
 /* Define to the sub-directory in which libtool stores uninstalled libraries.
    */
-#cmakedefine LT_OBJDIR
+#cmakedefine LT_OBJDIR "@LT_OBJDIR@"
 
 /* Name of package */
-#cmakedefine PACKAGE
+#cmakedefine PACKAGE "@PACKAGE@"
 
 /* Define to the address where bug reports for this package should be sent. */
-#cmakedefine PACKAGE_BUGREPORT
+#cmakedefine PACKAGE_BUGREPORT "@PACKAGE_BUGREPORT@"
 
 /* Define to the full name of this package. */
-#cmakedefine PACKAGE_NAME
+#cmakedefine PACKAGE_NAME "@PACKAGE_NAME@"
 
 /* Define to the full name and version of this package. */
-#cmakedefine PACKAGE_STRING
+#cmakedefine PACKAGE_STRING "@PACKAGE_STRING@"
 
 /* Define to the one symbol short name of this package. */
-#cmakedefine PACKAGE_TARNAME
+#cmakedefine PACKAGE_TARNAME "@PACKAGE_TARNAME@"
 
 /* Define to the version of this package. */
-#cmakedefine PACKAGE_VERSION
+#cmakedefine PACKAGE_VERSION "@PACKAGE_VERSION@"
 
 /* Define to necessary symbol if this constant uses a non-standard name on
    your system. */
-#cmakedefine PTHREAD_CREATE_JOINABLE
+#cmakedefine PTHREAD_CREATE_JOINABLE "@PTHREAD_CREATE_JOINABLE@"
 
 /* Define to 1 if you have the ANSI C header files. */
 #cmakedefine01 STDC_HEADERS
 
 /* Version number of package */
-#cmakedefine VERSION
+#cmakedefine VERSION "@VERSION@"

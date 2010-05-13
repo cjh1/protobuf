@@ -1,8 +1,8 @@
-#include <@LOCATION@>
+#include <@LOCATION_SET_I@>
 int main ()
 {
- @NAMESPACE@::@CLASSNAME@<int, int> const m;
- m.find(1);
+ @NAMESPACE_I@::@CLASSNAME_SET_I@<int> const s;
+ s.find(1);
  return 0;
 }
 
