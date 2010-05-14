@@ -3,7 +3,8 @@ project(protobuf)
 
 set(LIBRARY_OUTPUT_PATH    ${CMAKE_CURRENT_BINARY_DIR}/bin CACHE INTERNAL "")
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR}/bin CACHE INTERNAL "")
-set(CXX_TEST_PATH          ${CMAKE_CURRENT_BINARY_DIR}/bin CACHE INTERNAL "")
+
+enable_testing()
 
 add_subdirectory(src)
 add_subdirectory(gtest)
