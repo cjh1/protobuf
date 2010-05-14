@@ -1,6 +1,3 @@
-cmake_minimum_required(VERSION 2.8)
-project(protobuf)
-
 # Include all the necessary files for macros
 INCLUDE (CheckFunctionExists)
 INCLUDE (CheckIncludeFile)
@@ -193,10 +190,14 @@ set(LIBPROTOBUF_SOURCES
  google/protobuf/compiler/importer.cc
  google/protobuf/compiler/parser.cc
  )
-set(LIBPROTOBUF_INCLUDES ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/..)
+set(LIBPROTOBUF_INCLUDES
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/..)
+include_directories(${LIBPROTOBUF_INCLUDES})
 
 add_library(protobuf SHARED ${LIBPROTOBUF_SOURCES})
-include_directories(${LIBPROTOBUF_INCLUDES})
 set_target_properties(protobuf PROPERTIES
                       LINK_FLAGS      -pthread
                       CMAKE_CXX_FLAGS -pthread)
@@ -258,12 +259,10 @@ set(LIBPROTOC_SOURCES
  google/protobuf/compiler/java/java_service.h
  google/protobuf/compiler/python/python_generator.cc
  )
-# set(LIBPROTOC_INCLUDES ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/..)
 set(LIBPROTOC_LIBRARY_INCLUDES ${LIBRARY_OUTPUT_PATH})
+link_directories(${LIBPROTOC_LIBRARY_INCLUDES})
 
 add_library(protoc SHARED ${LIBPROTOC_SOURCES})
-include_directories($LIBPROTOC_INCLUDES)
-link_directories(${LIBPROTOC_LIBRARY_INCLUDES})
 set_target_properties(protoc PROPERTIES
                       LINK_FLAGS      -pthread
                       CMAKE_CXX_FLAGS -pthread)
