@@ -6,5 +6,5 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR}/bin CACHE INTERNAL "")
 
 enable_testing()
 
-add_subdirectory(src)
 add_subdirectory(gtest)
+add_subdirectory(src)
