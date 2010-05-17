@@ -91,7 +91,7 @@ foreach(NAMESPACE_I std std::tr1 stdext __gnu_cxx "")
   endif()
  endforeach(LOCATION_SET_I)
 
- # See if we found a successful compile
+ # See if we found a successful compile for both hash_map and hash_set
  if (SUCCEED_MAP AND SUCCEED_SET)
   # Namespace of hash_map/hash_set
   set(HASH_NAMESPACE "${NAMESPACE_I}")
@@ -361,7 +361,6 @@ target_link_libraries(protobuf_test ${PTHREAD_LINK_LIB}
 add_test(protobuf_test ${EXECUTABLE_OUTPUT_PATH}/protobuf_test)
 
 # protobuf-lazy-descriptor-test
-# Need to copy test data
 add_executable(protobuf_lazy_descriptor_test
                google/protobuf/compiler/cpp/cpp_unittest.cc
                ${COMMON_TEST_SOURCES}
@@ -438,7 +437,7 @@ if (HAVE_ZLIB)
  # I also read the source code for zcgzip which seems to me only
  # read from STDIN and outpu to STDOUT. This suggests that you cannot do
  # automatical tests with those configurations. Of course, redirection should
- # be able to make zcgzip work with files. However, I did not see any
+ # be able to make zcgzip work with files. However, I do not see any
  # redirection operation from the make ckeck command line.
  # add_test(zcgzip   ${EXECUTABLE_OUTPUT_PATH}/zcgzip)
  # add_test(zcgunzip ${EXECUTABLE_OUTPUT_PATH}/zcgunzip)

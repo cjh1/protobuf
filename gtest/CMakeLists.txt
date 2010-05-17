@@ -8,7 +8,7 @@ include_directories(
  ${CMAKE_CURRENT_SOURCE_DIR}/include)
 link_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-# Generate gtest library
+# gtest library
 add_library(gtest SHARED
             src/gtest.cc
             src/gtest-death-test.cc
@@ -21,7 +21,7 @@ set_target_properties(gtest           PROPERTIES
                       CMAKE_CXX_FLAGS -pthread)
 target_link_libraries(gtest pthread)
 
-# Generate gtest_main library
+# gtest_main library
 add_library(gtest_main SHARED src/gtest_main.cc)
 set_target_properties(gtest_main     PROPERTIES
                       LINK_FLAGS      -pthread
