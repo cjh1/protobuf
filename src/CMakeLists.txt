@@ -393,7 +393,6 @@ target_link_libraries(lite_unittest
 add_test(lite_unittest ${EXECUTABLE_OUTPUT_PATH}/lite_unittest)
 
 # plugins
-# ?? problematic - no output on start, nothing
 add_executable(test_plugin
                google/protobuf/compiler/mock_code_generator.cc
                google/protobuf/testing/file.cc
@@ -401,7 +400,8 @@ add_executable(test_plugin
                ${PROTOC_LITE_OUTPUTS})
 set_target_properties(test_plugin PROPERTIES
                       CMAKE_CXX_FLAGS ${PTHREAD_CXX_FLAG}
-                      LINK_FLAGS      ${PTHREAD_LINK_FLAG})
+                      LINK_FLAGS      ${PTHREAD_LINK_FLAG}
+                      RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/src)
 target_link_libraries(test_plugin
                       ${PTHREAD_LINK_LIB}
                       protobuf
@@ -414,7 +414,6 @@ target_link_libraries(test_plugin
 # add_test(test_plugin ${EXECUTABLE_OUTPUT_PATH}/test_plugin)
 
 # zlib
-# ?? problematic - no output on start, nothing
 if (HAVE_ZLIB)
  set(ZCGZIP_SOURCES   google/protobuf/testing/zcgzip.cc)
  set(ZCGUNZIP_SOURCES google/protobuf/testing/zcgunzip.cc)
