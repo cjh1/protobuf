@@ -29,9 +29,15 @@ CHECK_INCLUDE_FILE("unistd.h"    HAVE_UNISTD_H)
 # If both pthread.h and pthread library file are found
 CHECK_INCLUDE_FILE("pthread.h" HAVE_PTHREAD_H)
 CHECK_LIBRARY_EXISTS("pthread" pthread_exit ""  HAVE_PTHREAD_LIB)
+set(PTHREAD_CXX_FLAG  "")
+set(PTHREAD_LINK_FLAG "")
+set(PTHREAD_LINK_LIB  "")
 # Then define HAVE_PTHREAD
 if (DEFINED HAVE_PTHREAD_H AND DEFINED HAVE_PTHREAD_LIB)
  set(HAVE_PTHREAD 1)
+ set(PTHREAD_CXX_FLAG  "-pthread")
+ set(PTHREAD_LINK_FLAG "-pthread")
+ set(PTHREAD_LINK_LIB  "pthread")
 endif()
 
 # Enumerate all known and possible combinations of
@@ -107,8 +113,10 @@ endforeach(NAMESPACE_I)
 
 # Enable classes using zlib compression
 find_package(ZLIB)
+set(ZLIB_LINK_LIB "")
 if (ZLIB_FOUND)
  set(HAVE_ZLIB 1)
+ set(ZLIB_LINK_LIB "z")
 endif ()
 
 # Define to the sub-directory in which libtool stores uninstalled libraries
@@ -193,12 +201,10 @@ set(LIBPROTOBUF_SOURCES
  google/protobuf/compiler/importer.cc
  google/protobuf/compiler/parser.cc)
 add_library(protobuf SHARED ${LIBPROTOBUF_SOURCES})
-if (HAVE_PTHREAD)
- set_target_properties(protobuf        PROPERTIES
-                       LINK_FLAGS      -pthread
-                       CMAKE_CXX_FLAGS -pthread)
- target_link_libraries(protobuf pthread)
-endif ()
+set_target_properties(protobuf        PROPERTIES
+                      CMAKE_CXX_FLAGS ${PTHREAD_CXX_FLAG}
+                      LINK_FLAGS      ${PTHREAD_LINK_FLAG})
+target_link_libraries(protobuf ${PTHREAD_LINK_LIB})
 
 # protobuf-lite library
 set(PROTOBUF_LITE_SOURCES
@@ -218,12 +224,10 @@ set(PROTOBUF_LITE_SOURCES
  google/protobuf/io/zero_copy_stream.cc
  google/protobuf/io/zero_copy_stream_impl_lite.cc)
 add_library(protobuf-lite SHARED ${PROTOBUF_LITE_SOURCES})
-if (HAVE_PTHREAD)
- set_target_properties(protobuf-lite   PROPERTIES
-                       LINK_FLAGS      -pthread
-                       CMAKE_CXX_FLAGS -pthread)
- target_link_libraries(protobuf-lite pthread)
-endif ()
+set_target_properties(protobuf-lite   PROPERTIES
+                      CMAKE_CXX_FLAGS ${PTHREAD_CXX_FLAG}
+                      LINK_FLAGS      ${PTHREAD_LINK_FLAG})
+target_link_libraries(protobuf-lite ${PTHREAD_LINK_LIB})
 
 # protoc library
 set(LIBPROTOC_SOURCES
@@ -282,74 +286,65 @@ set(LIBPROTOC_SOURCES
  google/protobuf/compiler/python/python_generator.cc)
 link_directories(${LIBRARY_OUTPUT_PATH})
 add_library(protoc SHARED ${LIBPROTOC_SOURCES})
-if (HAVE_PTHREAD)
- set_target_properties(protoc          PROPERTIES
-                       LINK_FLAGS      -pthread
-                       CMAKE_CXX_FLAGS -pthread)
- target_link_libraries(protoc pthread protobuf)
-else ()
- target_link_libraries(protoc protobuf)
-endif ()
+set_target_properties(protoc          PROPERTIES
+                      CMAKE_CXX_FLAGS ${PTHREAD_CXX_FLAG}
+                      LINK_FLAGS      ${PTHREAD_LINK_FLAG})
+target_link_libraries(protoc ${PTHREAD_LINK_LIB} protobuf)
 
 # protoc executable
-set(PROTOC_SOURCES google/protobuf/compiler/main.cc)
 link_directories(${LIBRARY_OUTPUT_PATH})
-add_executable(protoc_compiler ${PROTOC_SOURCES})
+add_executable(protoc_compiler google/protobuf/compiler/main.cc)
 set_target_properties(protoc_compiler PROPERTIES
-                      OUTPUT_NAME     protoc)
-if (HAVE_PTHREAD)
- set_target_properties(protoc_compiler PROPERTIES
-                       LINK_FLAGS      -pthread
-                       CMAKE_CXX_FLAGS -pthread)
- target_link_libraries(protoc_compiler pthread protoc z)
-else ()
- target_link_libraries(protoc_compiler protoc z)
-endif ()
+                      OUTPUT_NAME     protoc
+                      CMAKE_CXX_FLAGS ${PTHREAD_CXX_FLAG}
+                      LINK_FLAGS      ${PTHREAD_LINK_FLAG})
+target_link_libraries(protoc_compiler
+                      ${PTHREAD_LINK_LIB}
+                      protobuf
+                      protoc
+                      ${ZLIB_LINK_LIB})
 
 # Generate test sources
 foreach(PROTOBUF_SAMPLE_INPUT
- google/protobuf/unittest.proto
- google/protobuf/unittest_empty.proto
- google/protobuf/unittest_import.proto
- google/protobuf/unittest_mset.proto
- google/protobuf/unittest_optimize_for.proto
- google/protobuf/unittest_embed_optimize_for.proto
- google/protobuf/unittest_custom_options.proto
- google/protobuf/unittest_lite.proto
- google/protobuf/unittest_import_lite.proto
- google/protobuf/unittest_lite_imports_nonlite.proto
- google/protobuf/unittest_no_generic_services.proto
- google/protobuf/compiler/cpp/cpp_test_bad_identifiers.proto)
- add_custom_command(TARGET protoc_compiler POST_BUILD
+ google/protobuf/unittest
+ google/protobuf/unittest_empty
+ google/protobuf/unittest_import
+ google/protobuf/unittest_mset
+ google/protobuf/unittest_optimize_for
+ google/protobuf/unittest_embed_optimize_for
+ google/protobuf/unittest_custom_options
+ google/protobuf/unittest_lite
+ google/protobuf/unittest_import_lite
+ google/protobuf/unittest_lite_imports_nonlite
+ google/protobuf/unittest_no_generic_services
+ google/protobuf/compiler/cpp/cpp_test_bad_identifiers)
+ add_custom_command(OUTPUT ${PROTOBUF_SAMPLE_INPUT}.pb.cc ${PROTOBUF_SAMPLE_INPUT}.pb.h
                     COMMAND ${EXECUTABLE_OUTPUT_PATH}/protoc
-                            ARGS ${CMAKE_CURRENT_SOURCE_DIR}/${PROTOBUF_SAMPLE_INPUT}
+                            ARGS ${CMAKE_CURRENT_SOURCE_DIR}/${PROTOBUF_SAMPLE_INPUT}.proto
                                  --proto_path="${CMAKE_CURRENT_SOURCE_DIR}"
-                                 --cpp_out="${EXECUTABLE_OUTPUT_PATH}")
+                                 --cpp_out="${CMAKE_BINARY_DIR}/src"
+                    DEPENDS protoc_compiler ${PROTOBUF_SAMPLE_INPUT}.proto)
 endforeach()
 
-#   google/protobuf/unittest.pb.cc
-#   google/protobuf/unittest.pb.h
-#   google/protobuf/unittest_empty.pb.cc
-#   google/protobuf/unittest_empty.pb.h
-#   google/protobuf/unittest_import.pb.cc
-#   google/protobuf/unittest_import.pb.h
-#   google/protobuf/unittest_mset.pb.cc
-#   google/protobuf/unittest_mset.pb.h
-#   google/protobuf/unittest_optimize_for.pb.cc
-#   google/protobuf/unittest_optimize_for.pb.h
-#   google/protobuf/unittest_embed_optimize_for.pb.cc
-#   google/protobuf/unittest_embed_optimize_for.pb.h
-#   google/protobuf/unittest_custom_options.pb.cc
-#   google/protobuf/unittest_custom_options.pb.h
-#   google/protobuf/unittest_lite_imports_nonlite.pb.cc
-#   google/protobuf/unittest_lite_imports_nonlite.pb.h
-#   google/protobuf/unittest_no_generic_services.pb.cc
-#   google/protobuf/unittest_no_generic_services.pb.h
-#   google/protobuf/compiler/cpp/cpp_test_bad_identifiers.pb.cc
-#   google/protobuf/compiler/cpp/cpp_test_bad_identifiers.pb.h
-
 # Tests ==============================================================
-# protobuf-test
+set(PROTOC_LITE_OUTPUTS
+ google/protobuf/unittest_lite.pb.cc
+ google/protobuf/unittest_import_lite.pb.cc)
+set(PROTOC_OUTPUTS ${PROTOC_LITE_OUTPUTS}
+ google/protobuf/unittest.pb.cc
+ google/protobuf/unittest_empty.pb.cc
+ google/protobuf/unittest_import.pb.cc
+ google/protobuf/unittest_mset.pb.cc
+ google/protobuf/unittest_optimize_for.pb.cc
+ google/protobuf/unittest_embed_optimize_for.pb.cc
+ google/protobuf/unittest_custom_options.pb.cc
+ google/protobuf/unittest_lite_imports_nonlite.pb.cc
+ google/protobuf/unittest_no_generic_services.pb.cc
+ google/protobuf/compiler/cpp/cpp_test_bad_identifiers.pb.cc)
+set(COMMON_TEST_SOURCES
+ google/protobuf/test_util.cc
+ google/protobuf/testing/googletest.cc
+ google/protobuf/testing/file.cc)
 set(PROTOBUF_TEST_SOURCES
  google/protobuf/stubs/common_unittest.cc
  google/protobuf/stubs/once_unittest.cc
@@ -378,94 +373,98 @@ set(PROTOBUF_TEST_SOURCES
  google/protobuf/compiler/cpp/cpp_unittest.cc
  google/protobuf/compiler/cpp/cpp_plugin_unittest.cc
  google/protobuf/compiler/java/java_plugin_unittest.cc
- google/protobuf/compiler/python/python_plugin_unittest.cc
- google/protobuf/test_util.cc
- google/protobuf/testing/googletest.cc
- google/protobuf/testing/file.cc)
-include_directories(${CMAKE_SOURCE_DIR}/gtest/include ${EXECUTABLE_OUTPUT_PATH})
-add_executable(protobuf_test ${PROTOBUF_TEST_SOURCES})
-if (HAVE_PTHREAD)
- set_target_properties(protobuf_test   PROPERTIES
-                       CMAKE_CXX_FLAGS -pthread
-                       LINK_FLAGS      -pthread)
- target_link_libraries(protobuf_test pthread protobuf protoc gtest gtest_main)
-else ()
- target_link_libraries(protobuf_test protobuf protoc gtest gtest_main)
-endif ()
+ google/protobuf/compiler/python/python_plugin_unittest.cc)
+include_directories(${CMAKE_SOURCE_DIR}/gtest/include ${CMAKE_BINARY_DIR}/src)
+
+# protobuf-test
+add_executable(protobuf_test
+               ${PROTOBUF_TEST_SOURCES}
+               ${COMMON_TEST_SOURCES}
+               ${PROTOC_OUTPUTS})
+set_target_properties(protobuf_test   PROPERTIES
+                      CMAKE_CXX_FLAGS ${PTHREAD_CXX_FLAG}
+                      LINK_FLAGS      ${PTHREAD_LINK_FLAG})
+target_link_libraries(protobuf_test ${PTHREAD_LINK_LIB}
+                                    protobuf
+                                    protoc
+                                    gtest
+                                    gtest_main
+                                    ${ZLIB_LINK_LIB})
 add_test(protobuf_test ${EXECUTABLE_OUTPUT_PATH}/protobuf_test)
 
 # protobuf-lazy-descriptor-test
-# set(PROTOBUF_LAZY_DESCRIPTOR_TEST_SOURCES
-#  google/protobuf/compiler/cpp/cpp_unittest.cc
-#  google/protobuf/test_util.cc
-#  google/protobuf/testing/googletest.cc
-#  google/protobuf/testing/file.cc)
-# add_executable(protobuf_lazy_descriptor_test ${PROTOBUF_LAZY_DESCRIPTOR_TEST_SOURCES})
-# if (HAVE_PTHREAD)
-#  set_target_properties(protobuf_lazy_descriptor_test PROPERTIES
-#                        CMAKE_CXX_FLAGS               -pthread
-#                        LINK_FLAGS                    -pthread
-#                        COMPILE_DEFINITIONS "PROTOBUF_TEST_NO_DESCRIPTORS")
-#  target_link_libraries(protobuf_lazy_descriptor_test pthread protobuf gtest gtest_main)
-# else ()
-#  set_target_properties(protobuf_lazy_descriptor_test PROPERTIES
-#                        COMPILE_DEFINITIONS "PROTOBUF_TEST_NO_DESCRIPTORS")
-#  target_link_libraries(protobuf_lazy_descriptor_test protobuf gtest gtest_main)
-# endif ()
-# add_test(protobuf_lazy_descriptor_test ${EXECUTABLE_OUTPUT_PATH}/protobuf_lazy_descriptor_test)
+# Need to copy test data
+add_executable(protobuf_lazy_descriptor_test
+               google/protobuf/compiler/cpp/cpp_unittest.cc
+               ${COMMON_TEST_SOURCES}
+               ${PROTOC_OUTPUTS})
+set_target_properties(protobuf_lazy_descriptor_test PROPERTIES
+                      CMAKE_CXX_FLAGS               ${PTHREAD_CXX_FLAG}
+                      LINK_FLAGS                    ${PTHREAD_LINK_FLAG}
+                      COMPILE_DEFINITIONS "PROTOBUF_TEST_NO_DESCRIPTORS")
+target_link_libraries(protobuf_lazy_descriptor_test
+                      ${PTHREAD_LINK_LIB}
+                      protobuf
+                      gtest
+                      gtest_main
+                      ${ZLIB_LINK_LIB})
+add_test(protobuf_lazy_descriptor_test ${EXECUTABLE_OUTPUT_PATH}/protobuf_lazy_descriptor_test)
 
 # lite-unittest
-# set(LITE_UNITTEST_SOURCES
-#  google/protobuf/lite_unittest.cc
-#  google/protobuf/test_util_lite.cc
-#  google/protobuf/test_util_lite.h)
-# add_executable(lite_unittest ${LITE_UNITTEST_SOURCES})
-# if (HAVE_PTHREAD)
-#  set_target_properties(lite_unittest   PROPERTIES
-#                        CMAKE_CXX_FLAGS -pthread
-#                        LINK_FLAGS      -pthread)
-#  target_link_libraries(lite_unittest pthread protobuf-lite)
-# else ()
-#  target_link_libraries(lite_unittest protobuf-lite)
-# endif ()
-# add_test(lite_unittest ${EXECUTABLE_OUTPUT_PATH}/lite_unittest)
-# 
-# # plugins
-# set(PROTOBUF_PLUGINS_SOURCES
-#   google/protobuf/compiler/mock_code_generator.cc
-#   google/protobuf/testing/file.cc
-#   google/protobuf/compiler/test_plugin.cc)
-# add_executable(protobuf_plugins ${PROTOBUF_PLUGINS_SOURCES})
-# if (HAVE_PTHREAD)
-#  set_target_properties(protobuf_plugins PROPERTIES
-#                        CMAKE_CXX_FLAGS  -pthread
-#                        LINK_FLAGS       -pthread)
-#  target_link_libraries(protobuf_plugins pthread protobuf protoc gtest z)
-# else ()
-#  target_link_libraries(protobuf_plugins protobuf protoc gtest z)
-# endif ()
-# add_test(protobuf_plugins ${EXECUTABLE_OUTPUT_PATH}/protobuf_plugins)
+add_executable(lite_unittest
+               google/protobuf/lite_unittest.cc
+               google/protobuf/test_util_lite.cc
+               google/protobuf/test_util_lite.h
+               ${PROTOC_LITE_OUTPUTS})
+set_target_properties(lite_unittest   PROPERTIES
+                      CMAKE_CXX_FLAGS ${PTHREAD_CXX_FLAG}
+                      LINK_FLAGS      ${PTHREAD_LINK_FLAG})
+target_link_libraries(lite_unittest
+                      ${PTHREAD_LINK_LIB}
+                      protobuf-lite
+                      ${ZLIB_LINK_LIB})
+add_test(lite_unittest ${EXECUTABLE_OUTPUT_PATH}/lite_unittest)
+
+# plugins
+# ?? problematic - no output on start, nothing
+add_executable(protobuf_plugins
+               google/protobuf/compiler/mock_code_generator.cc
+               google/protobuf/testing/file.cc
+               google/protobuf/compiler/test_plugin.cc
+               ${PROTOC_LITE_OUTPUTS})
+set_target_properties(protobuf_plugins PROPERTIES
+                     CMAKE_CXX_FLAGS ${PTHREAD_CXX_FLAG}
+                     LINK_FLAGS      ${PTHREAD_LINK_FLAG})
+target_link_libraries(protobuf_plugins
+                      ${PTHREAD_LINK_LIB}
+                      protobuf
+                      protoc
+                      gtest
+                      ${ZLIB_LINK_LIB})
+add_test(protobuf_plugins ${EXECUTABLE_OUTPUT_PATH}/protobuf_plugins)
 
 # zlib
-# if (HAVE_ZLIB)
-#  set(ZCGZIP_SOURCES   google/protobuf/testing/zcgzip.cc)
-#  set(ZCGUNZIP_SOURCES google/protobuf/testing/zcgunzip.cc)
-# 
-#  add_executable(protobuf_zcgzip   ${ZCGZIP_SOURCES})
-#  add_executable(protobuf_zcgunzip ${ZCGUNZIP_SOURCES})
-# 
-#  if (HAVE_PTHREAD)
-#   set_target_properties(protobuf_zcgzip PROPERTIES
-#                         CMAKE_CXX_FLAGS -pthread
-#                         LINK_FLAGS      -pthread)
-#   target_link_libraries(protobuf_zcgzip pthread protobuf z)
-#  else ()
-#   target_link_libraries(protobuf_zcgzip protobuf z)
-#  endif ()
-# 
-#  add_test(protobuf_zcgzip ${EXECUTABLE_OUTPUT_PATH}/protobuf_zcgzip)
-#  add_test(protobuf_zcgunzip ${EXECUTABLE_OUTPUT_PATH}/protobuf_zcgunzip)
-# endif ()
+# ?? problematic - no output on start, nothing
+if (HAVE_ZLIB)
+ set(ZCGZIP_SOURCES   google/protobuf/testing/zcgzip.cc)
+ set(ZCGUNZIP_SOURCES google/protobuf/testing/zcgunzip.cc)
+
+ add_executable(protobuf_zcgzip   ${ZCGZIP_SOURCES})
+ add_executable(protobuf_zcgunzip ${ZCGUNZIP_SOURCES})
+
+ set_target_properties(protobuf_zcgzip PROPERTIES
+                       CMAKE_CXX_FLAGS ${PTHREAD_CXX_FLAG}
+                       LINK_FLAGS      ${PTHREAD_LINK_FLAG})
+ target_link_libraries(protobuf_zcgzip ${PTHREAD_LINK_LIB} protobuf ${ZLIB_LINK_LIB})
+
+ set_target_properties(protobuf_zcgunzip PROPERTIES
+                       CMAKE_CXX_FLAGS ${PTHREAD_CXX_FLAG}
+                       LINK_FLAGS      ${PTHREAD_LINK_FLAG})
+ target_link_libraries(protobuf_zcgunzip ${PTHREAD_LINK_LIB} protobuf ${ZLIB_LINK_LIB})
+
+ add_test(protobuf_zcgzip   ${EXECUTABLE_OUTPUT_PATH}/protobuf_zcgzip)
+ add_test(protobuf_zcgunzip ${EXECUTABLE_OUTPUT_PATH}/protobuf_zcgunzip)
+endif ()
 
 
 # EXTRA_DIST =
