@@ -272,7 +272,7 @@ target_link_libraries(protoc_compiler
                       ${ZLIB_LINK_LIB})
 
 # Generate test sources
-foreach(PROTOBUF_SAMPLE_INPUT
+set(PROTOC_INPUTS
  google/protobuf/unittest
  google/protobuf/unittest_empty
  google/protobuf/unittest_import
@@ -285,6 +285,7 @@ foreach(PROTOBUF_SAMPLE_INPUT
  google/protobuf/unittest_lite_imports_nonlite
  google/protobuf/unittest_no_generic_services
  google/protobuf/compiler/cpp/cpp_test_bad_identifiers)
+foreach(PROTOBUF_SAMPLE_INPUT ${PROTOC_INPUTS})
  add_custom_command(OUTPUT ${PROTOBUF_SAMPLE_INPUT}.pb.cc ${PROTOBUF_SAMPLE_INPUT}.pb.h
                     COMMAND ${EXECUTABLE_OUTPUT_PATH}/protoc
                             ARGS ${CMAKE_CURRENT_SOURCE_DIR}/${PROTOBUF_SAMPLE_INPUT}.proto
@@ -393,21 +394,24 @@ add_test(lite_unittest ${EXECUTABLE_OUTPUT_PATH}/lite_unittest)
 
 # plugins
 # ?? problematic - no output on start, nothing
-add_executable(protobuf_plugins
+add_executable(test_plugin
                google/protobuf/compiler/mock_code_generator.cc
                google/protobuf/testing/file.cc
                google/protobuf/compiler/test_plugin.cc
                ${PROTOC_LITE_OUTPUTS})
-set_target_properties(protobuf_plugins PROPERTIES
-                     CMAKE_CXX_FLAGS ${PTHREAD_CXX_FLAG}
-                     LINK_FLAGS      ${PTHREAD_LINK_FLAG})
-target_link_libraries(protobuf_plugins
+set_target_properties(test_plugin PROPERTIES
+                      CMAKE_CXX_FLAGS ${PTHREAD_CXX_FLAG}
+                      LINK_FLAGS      ${PTHREAD_LINK_FLAG})
+target_link_libraries(test_plugin
                       ${PTHREAD_LINK_LIB}
                       protobuf
                       protoc
                       gtest
                       ${ZLIB_LINK_LIB})
-add_test(protobuf_plugins ${EXECUTABLE_OUTPUT_PATH}/protobuf_plugins)
+# test_plugin by itself is not a valid test program,
+# it is used with/called by protobuf_test which is the main
+# test program to test plugin facility.
+# add_test(test_plugin ${EXECUTABLE_OUTPUT_PATH}/test_plugin)
 
 # zlib
 # ?? problematic - no output on start, nothing
@@ -415,51 +419,59 @@ if (HAVE_ZLIB)
  set(ZCGZIP_SOURCES   google/protobuf/testing/zcgzip.cc)
  set(ZCGUNZIP_SOURCES google/protobuf/testing/zcgunzip.cc)
 
- add_executable(protobuf_zcgzip   ${ZCGZIP_SOURCES})
- add_executable(protobuf_zcgunzip ${ZCGUNZIP_SOURCES})
+ add_executable(zcgzip   ${ZCGZIP_SOURCES})
+ add_executable(zcgunzip ${ZCGUNZIP_SOURCES})
 
- set_target_properties(protobuf_zcgzip PROPERTIES
+ set_target_properties(zcgzip PROPERTIES
                        CMAKE_CXX_FLAGS ${PTHREAD_CXX_FLAG}
                        LINK_FLAGS      ${PTHREAD_LINK_FLAG})
- target_link_libraries(protobuf_zcgzip ${PTHREAD_LINK_LIB} protobuf ${ZLIB_LINK_LIB})
+ target_link_libraries(zcgzip ${PTHREAD_LINK_LIB} protobuf ${ZLIB_LINK_LIB})
 
- set_target_properties(protobuf_zcgunzip PROPERTIES
+ set_target_properties(zcgunzip PROPERTIES
                        CMAKE_CXX_FLAGS ${PTHREAD_CXX_FLAG}
                        LINK_FLAGS      ${PTHREAD_LINK_FLAG})
- target_link_libraries(protobuf_zcgunzip ${PTHREAD_LINK_LIB} protobuf ${ZLIB_LINK_LIB})
+ target_link_libraries(zcgunzip ${PTHREAD_LINK_LIB} protobuf ${ZLIB_LINK_LIB})
 
- add_test(protobuf_zcgzip   ${EXECUTABLE_OUTPUT_PATH}/protobuf_zcgzip)
- add_test(protobuf_zcgunzip ${EXECUTABLE_OUTPUT_PATH}/protobuf_zcgunzip)
+ # I went through the original Makefile.am file and cannot find any useage
+ # of these files. Actually, when I removed these files from the test directory
+ # all the tests still run pretty well which leads me to assume that they are
+ # not used.
+ # I also read the source code for zcgzip which seems to me only
+ # read from STDIN and outpu to STDOUT. This suggests that you cannot do
+ # automatical tests with those configurations. Of course, redirection should
+ # be able to make zcgzip work with files. However, I did not see any
+ # redirection operation from the make ckeck command line.
+ # add_test(zcgzip   ${EXECUTABLE_OUTPUT_PATH}/zcgzip)
+ # add_test(zcgunzip ${EXECUTABLE_OUTPUT_PATH}/zcgunzip)
 endif ()
 
-
-# EXTRA_DIST =
-#   $(protoc_inputs)
-#   solaris/libstdc++.la
-#   google/protobuf/io/gzip_stream.h
-#   google/protobuf/io/gzip_stream_unittest.sh
-#   google/protobuf/testdata/golden_message
-#   google/protobuf/testdata/golden_packed_fields_message
-#   google/protobuf/testdata/text_format_unittest_data.txt
-#   google/protobuf/testdata/text_format_unittest_extensions_data.txt
-#   google/protobuf/package_info.h
-#   google/protobuf/io/package_info.h
-#   google/protobuf/compiler/package_info.h
-#   google/protobuf/compiler/zip_output_unittest.sh
-#   google/protobuf/unittest_enormous_descriptor.proto
-#
-# protoc_lite_outputs =
-#   google/protobuf/unittest_lite.pb.cc
-#   google/protobuf/unittest_lite.pb.h
-#   google/protobuf/unittest_import_lite.pb.cc
-#   google/protobuf/unittest_import_lite.pb.h
-#
-# protoc_outputs =
-#   $(protoc_lite_outputs)
-# COMMON_TEST_SOURCES =
-#   google/protobuf/test_util.cc
-#   google/protobuf/test_util.h
-#   google/protobuf/testing/googletest.cc
-#   google/protobuf/testing/googletest.h
-#   google/protobuf/testing/file.cc
-#   google/protobuf/testing/file.h
+# Copy these dest files to position - the test requires them
+foreach(EXTRA_DIST_I
+ ${PROTOC_INPUTS}
+ google/protobuf/descriptor
+ google/protobuf/compiler/plugin)
+ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${EXTRA_DIST_I}.proto
+                ${CMAKE_BINARY_DIR}/src/${EXTRA_DIST_I}.proto
+                COPYONLY)
+endforeach(EXTRA_DIST_I)
+foreach(EXTRA_DIST_I
+ google/protobuf/descriptor.pb.h
+ google/protobuf/descriptor.pb.cc
+ google/protobuf/compiler/plugin.pb.h
+ google/protobuf/compiler/plugin.pb.cc
+ solaris/libstdc++.la
+ google/protobuf/io/gzip_stream.h
+ google/protobuf/io/gzip_stream_unittest.sh
+ google/protobuf/testdata/golden_message
+ google/protobuf/testdata/golden_packed_fields_message
+ google/protobuf/testdata/text_format_unittest_data.txt
+ google/protobuf/testdata/text_format_unittest_extensions_data.txt
+ google/protobuf/package_info.h
+ google/protobuf/io/package_info.h
+ google/protobuf/compiler/package_info.h
+ google/protobuf/compiler/zip_output_unittest.sh
+ google/protobuf/unittest_enormous_descriptor.proto)
+ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${EXTRA_DIST_I}
+                ${CMAKE_BINARY_DIR}/src/${EXTRA_DIST_I}
+                COPYONLY)
+endforeach(EXTRA_DIST_I)
