@@ -165,22 +165,16 @@ set(LIBPROTOBUF_SOURCES
  google/protobuf/stubs/common.cc
  google/protobuf/stubs/once.cc
  google/protobuf/stubs/hash.cc
- google/protobuf/stubs/hash.h
- google/protobuf/stubs/map-util.h
- google/protobuf/stubs/stl_util-inl.h
  google/protobuf/extension_set.cc
  google/protobuf/generated_message_util.cc
  google/protobuf/message_lite.cc
  google/protobuf/repeated_field.cc
  google/protobuf/wire_format_lite.cc
  google/protobuf/io/coded_stream.cc
- google/protobuf/io/coded_stream_inl.h
  google/protobuf/io/zero_copy_stream.cc
  google/protobuf/io/zero_copy_stream_impl_lite.cc
  google/protobuf/stubs/strutil.cc
- google/protobuf/stubs/strutil.h
  google/protobuf/stubs/substitute.cc
- google/protobuf/stubs/substitute.h
  google/protobuf/stubs/structurally_valid.cc
  google/protobuf/descriptor.cc
  google/protobuf/descriptor.pb.cc
@@ -211,16 +205,12 @@ set(PROTOBUF_LITE_SOURCES
  google/protobuf/stubs/common.cc
  google/protobuf/stubs/once.cc
  google/protobuf/stubs/hash.cc
- google/protobuf/stubs/hash.h
- google/protobuf/stubs/map-util.h
- google/protobuf/stubs/stl_util-inl.h
  google/protobuf/extension_set.cc
  google/protobuf/generated_message_util.cc
  google/protobuf/message_lite.cc
  google/protobuf/repeated_field.cc
  google/protobuf/wire_format_lite.cc
  google/protobuf/io/coded_stream.cc
- google/protobuf/io/coded_stream_inl.h
  google/protobuf/io/zero_copy_stream.cc
  google/protobuf/io/zero_copy_stream_impl_lite.cc)
 add_library(protobuf-lite SHARED ${PROTOBUF_LITE_SOURCES})
@@ -236,53 +226,30 @@ set(LIBPROTOC_SOURCES
  google/protobuf/compiler/plugin.cc
  google/protobuf/compiler/plugin.pb.cc
  google/protobuf/compiler/subprocess.cc
- google/protobuf/compiler/subprocess.h
  google/protobuf/compiler/zip_writer.cc
- google/protobuf/compiler/zip_writer.h
  google/protobuf/compiler/cpp/cpp_enum.cc
- google/protobuf/compiler/cpp/cpp_enum.h
  google/protobuf/compiler/cpp/cpp_enum_field.cc
- google/protobuf/compiler/cpp/cpp_enum_field.h
  google/protobuf/compiler/cpp/cpp_extension.cc
- google/protobuf/compiler/cpp/cpp_extension.h
  google/protobuf/compiler/cpp/cpp_field.cc
- google/protobuf/compiler/cpp/cpp_field.h
  google/protobuf/compiler/cpp/cpp_file.cc
- google/protobuf/compiler/cpp/cpp_file.h
  google/protobuf/compiler/cpp/cpp_generator.cc
  google/protobuf/compiler/cpp/cpp_helpers.cc
- google/protobuf/compiler/cpp/cpp_helpers.h
  google/protobuf/compiler/cpp/cpp_message.cc
- google/protobuf/compiler/cpp/cpp_message.h
  google/protobuf/compiler/cpp/cpp_message_field.cc
- google/protobuf/compiler/cpp/cpp_message_field.h
  google/protobuf/compiler/cpp/cpp_primitive_field.cc
- google/protobuf/compiler/cpp/cpp_primitive_field.h
  google/protobuf/compiler/cpp/cpp_service.cc
- google/protobuf/compiler/cpp/cpp_service.h
  google/protobuf/compiler/cpp/cpp_string_field.cc
- google/protobuf/compiler/cpp/cpp_string_field.h
  google/protobuf/compiler/java/java_enum.cc
- google/protobuf/compiler/java/java_enum.h
  google/protobuf/compiler/java/java_enum_field.cc
- google/protobuf/compiler/java/java_enum_field.h
  google/protobuf/compiler/java/java_extension.cc
- google/protobuf/compiler/java/java_extension.h
  google/protobuf/compiler/java/java_field.cc
- google/protobuf/compiler/java/java_field.h
  google/protobuf/compiler/java/java_file.cc
- google/protobuf/compiler/java/java_file.h
  google/protobuf/compiler/java/java_generator.cc
  google/protobuf/compiler/java/java_helpers.cc
- google/protobuf/compiler/java/java_helpers.h
  google/protobuf/compiler/java/java_message.cc
- google/protobuf/compiler/java/java_message.h
  google/protobuf/compiler/java/java_message_field.cc
- google/protobuf/compiler/java/java_message_field.h
  google/protobuf/compiler/java/java_primitive_field.cc
- google/protobuf/compiler/java/java_primitive_field.h
  google/protobuf/compiler/java/java_service.cc
- google/protobuf/compiler/java/java_service.h
  google/protobuf/compiler/python/python_generator.cc)
 link_directories(${LIBRARY_OUTPUT_PATH})
 add_library(protoc SHARED ${LIBPROTOC_SOURCES})
@@ -414,7 +381,6 @@ add_test(protobuf_lazy_descriptor_test ${EXECUTABLE_OUTPUT_PATH}/protobuf_lazy_d
 add_executable(lite_unittest
                google/protobuf/lite_unittest.cc
                google/protobuf/test_util_lite.cc
-               google/protobuf/test_util_lite.h
                ${PROTOC_LITE_OUTPUTS})
 set_target_properties(lite_unittest   PROPERTIES
                       CMAKE_CXX_FLAGS ${PTHREAD_CXX_FLAG}
