@@ -241,8 +241,6 @@ target_link_libraries(protoc_compiler
                       ${ZLIB_LINK_LIB})
 get_target_property(protoc_compiler_location protoc_compiler LOCATION)
 
-message("${protoc_compiler_location}")
-
 # Generate test sources
 set(PROTOC_INPUTS
  google/protobuf/unittest
@@ -379,11 +377,10 @@ add_executable(test_plugin
                google/protobuf/testing/file.cc
                google/protobuf/compiler/test_plugin.cc
                ${PROTOC_LITE_OUTPUTS})
-message("RUNTIME_OUTPUT_DIRECTORY [${CMAKE_BINARY_DIR}/src]")
 set_target_properties(test_plugin PROPERTIES
                       CMAKE_CXX_FLAGS ${PTHREAD_CXX_FLAG}
                       LINK_FLAGS      ${PTHREAD_LINK_FLAG}
-                      RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/src")
+                      RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/src")
 target_link_libraries(test_plugin
                       ${PTHREAD_LINK_LIB}
                       protobuf
