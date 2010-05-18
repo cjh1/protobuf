@@ -1,12 +1,3 @@
-# Include all the necessary files for macros
-INCLUDE (CheckFunctionExists)
-INCLUDE (CheckIncludeFile)
-INCLUDE (CheckIncludeFileCXX)
-INCLUDE (CheckIncludeFiles)
-INCLUDE (CheckLibraryExists)
-INCLUDE (CheckSymbolExists)
-INCLUDE (CheckTypeSize)
-
 set(PACKAGE           "protobuf")
 set(VERSION           "2.3.0")
 set(PACKAGE_BUGREPORT "protobuf@googlegroups.com")
@@ -25,20 +16,6 @@ CHECK_INCLUDE_FILE("string.h"    HAVE_STRING_H)
 CHECK_INCLUDE_FILE("sys/stat.h"  HAVE_SYS_STAT_H)
 CHECK_INCLUDE_FILE("sys/types.h" HAVE_SYS_TYPES_H)
 CHECK_INCLUDE_FILE("unistd.h"    HAVE_UNISTD_H)
-
-# If both pthread.h and pthread library file are found
-CHECK_INCLUDE_FILE("pthread.h" HAVE_PTHREAD_H)
-CHECK_LIBRARY_EXISTS("pthread" pthread_exit ""  HAVE_PTHREAD_LIB)
-set(PTHREAD_CXX_FLAG  "")
-set(PTHREAD_LINK_FLAG "")
-set(PTHREAD_LINK_LIB  "")
-# Then define HAVE_PTHREAD
-if (DEFINED HAVE_PTHREAD_H AND DEFINED HAVE_PTHREAD_LIB)
- set(HAVE_PTHREAD 1)
- set(PTHREAD_CXX_FLAG  "-pthread")
- set(PTHREAD_LINK_FLAG "-pthread")
- set(PTHREAD_LINK_LIB  "pthread")
-endif()
 
 # Enumerate all known and possible combinations of
 # hash_map/hash_set header files location
@@ -110,14 +87,6 @@ foreach(NAMESPACE_I std std::tr1 stdext __gnu_cxx "")
   break()
  endif ()
 endforeach(NAMESPACE_I)
-
-# Enable classes using zlib compression
-find_package(ZLIB)
-set(ZLIB_LINK_LIB "")
-if (ZLIB_FOUND)
- set(HAVE_ZLIB 1)
- set(ZLIB_LINK_LIB "z")
-endif ()
 
 # Define to the sub-directory in which libtool stores uninstalled libraries
 # LT_OBJDIR
@@ -194,7 +163,7 @@ set(LIBPROTOBUF_SOURCES
  google/protobuf/io/zero_copy_stream_impl.cc
  google/protobuf/compiler/importer.cc
  google/protobuf/compiler/parser.cc)
-add_library(protobuf SHARED ${LIBPROTOBUF_SOURCES})
+add_library(protobuf ${LIBPROTOBUF_SOURCES})
 set_target_properties(protobuf        PROPERTIES
                       CMAKE_CXX_FLAGS ${PTHREAD_CXX_FLAG}
                       LINK_FLAGS      ${PTHREAD_LINK_FLAG})
@@ -213,7 +182,7 @@ set(PROTOBUF_LITE_SOURCES
  google/protobuf/io/coded_stream.cc
  google/protobuf/io/zero_copy_stream.cc
  google/protobuf/io/zero_copy_stream_impl_lite.cc)
-add_library(protobuf-lite SHARED ${PROTOBUF_LITE_SOURCES})
+add_library(protobuf-lite ${PROTOBUF_LITE_SOURCES})
 set_target_properties(protobuf-lite   PROPERTIES
                       CMAKE_CXX_FLAGS ${PTHREAD_CXX_FLAG}
                       LINK_FLAGS      ${PTHREAD_LINK_FLAG})
@@ -252,7 +221,7 @@ set(LIBPROTOC_SOURCES
  google/protobuf/compiler/java/java_service.cc
  google/protobuf/compiler/python/python_generator.cc)
 link_directories(${LIBRARY_OUTPUT_PATH})
-add_library(protoc SHARED ${LIBPROTOC_SOURCES})
+add_library(protoc ${LIBPROTOC_SOURCES})
 set_target_properties(protoc          PROPERTIES
                       CMAKE_CXX_FLAGS ${PTHREAD_CXX_FLAG}
                       LINK_FLAGS      ${PTHREAD_LINK_FLAG})
@@ -270,6 +239,9 @@ target_link_libraries(protoc_compiler
                       protobuf
                       protoc
                       ${ZLIB_LINK_LIB})
+get_target_property(protoc_compiler_location protoc_compiler LOCATION)
+
+message("${protoc_compiler_location}")
 
 # Generate test sources
 set(PROTOC_INPUTS
@@ -286,12 +258,22 @@ set(PROTOC_INPUTS
  google/protobuf/unittest_no_generic_services
  google/protobuf/compiler/cpp/cpp_test_bad_identifiers)
 foreach(PROTOBUF_SAMPLE_INPUT ${PROTOC_INPUTS})
- add_custom_command(OUTPUT ${PROTOBUF_SAMPLE_INPUT}.pb.cc ${PROTOBUF_SAMPLE_INPUT}.pb.h
-                    COMMAND ${EXECUTABLE_OUTPUT_PATH}/protoc
+ add_custom_command(OUTPUT ${PROTOBUF_SAMPLE_INPUT}.pb.cc
+                           ${PROTOBUF_SAMPLE_INPUT}.pb.h
+                    COMMAND ${protoc_compiler_location}
                             ARGS ${CMAKE_CURRENT_SOURCE_DIR}/${PROTOBUF_SAMPLE_INPUT}.proto
                                  --proto_path="${CMAKE_CURRENT_SOURCE_DIR}"
                                  --cpp_out="${CMAKE_BINARY_DIR}/src"
                     DEPENDS protoc_compiler ${PROTOBUF_SAMPLE_INPUT}.proto)
+ # I am not quite sure why, buy I have to have this command below to 
+ # make sure it works for Visual Studio
+ if (WIN32)
+  add_custom_command(TARGET protoc_compiler
+                     COMMAND ${protoc_compiler_location}
+                             ARGS ${CMAKE_CURRENT_SOURCE_DIR}/${PROTOBUF_SAMPLE_INPUT}.proto
+                                  --proto_path="${CMAKE_CURRENT_SOURCE_DIR}"
+                                  --cpp_out="${CMAKE_BINARY_DIR}/src")
+ endif()
 endforeach()
 
 # Tests ==============================================================
@@ -397,10 +379,11 @@ add_executable(test_plugin
                google/protobuf/testing/file.cc
                google/protobuf/compiler/test_plugin.cc
                ${PROTOC_LITE_OUTPUTS})
+message("RUNTIME_OUTPUT_DIRECTORY [${CMAKE_BINARY_DIR}/src]")
 set_target_properties(test_plugin PROPERTIES
                       CMAKE_CXX_FLAGS ${PTHREAD_CXX_FLAG}
                       LINK_FLAGS      ${PTHREAD_LINK_FLAG}
-                      RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/src)
+                      RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/src")
 target_link_libraries(test_plugin
                       ${PTHREAD_LINK_LIB}
                       protobuf

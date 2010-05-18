@@ -9,7 +9,7 @@ include_directories(
 link_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # gtest library
-add_library(gtest SHARED
+add_library(gtest
             src/gtest.cc
             src/gtest-death-test.cc
             src/gtest-filepath.cc
@@ -17,16 +17,16 @@ add_library(gtest SHARED
             src/gtest-test-part.cc
             src/gtest-typed-test.cc)
 set_target_properties(gtest           PROPERTIES
-                      LINK_FLAGS      -pthread
-                      CMAKE_CXX_FLAGS -pthread)
-target_link_libraries(gtest pthread)
+                      CMAKE_CXX_FLAGS "${PTHREAD_CXX_FLAG}"
+                      LINK_FLAGS      "${PTHREAD_LINK_FLAG}")
+target_link_libraries(gtest "${PTHREAD_LINK_LIB}")
 
 # gtest_main library
-add_library(gtest_main SHARED src/gtest_main.cc)
+add_library(gtest_main src/gtest_main.cc)
 set_target_properties(gtest_main     PROPERTIES
-                      LINK_FLAGS      -pthread
-                      CMAKE_CXX_FLAGS -pthread)
-target_link_libraries(gtest_main gtest pthread)
+                      CMAKE_CXX_FLAGS "${PTHREAD_CXX_FLAG}"
+                      LINK_FLAGS      "${PTHREAD_LINK_FLAG}")
+target_link_libraries(gtest_main gtest "${PTHREAD_LINK_LIB}")
 
 add_subdirectory(samples)
 add_subdirectory(test)
