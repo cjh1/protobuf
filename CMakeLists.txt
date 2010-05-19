@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 project(protobuf)
 
+OPTION(BUILD_SHARED_LIBS "Build shard protobuf library" ON)
+
 # Direct all binary outputs to one directory
 set(LIBRARY_OUTPUT_PATH    ${CMAKE_CURRENT_BINARY_DIR}/bin CACHE INTERNAL "")
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR}/bin CACHE INTERNAL "")
