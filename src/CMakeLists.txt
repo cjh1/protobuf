@@ -165,7 +165,7 @@ set(LIBPROTOBUF_SOURCES
  google/protobuf/compiler/importer.cc
  google/protobuf/compiler/parser.cc)
 add_library(protobuf ${LIBPROTOBUF_SOURCES})
-target_link_libraries(protobuf ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(protobuf ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES})
 
 # protobuf-lite library
 set(PROTOBUF_LITE_SOURCES
