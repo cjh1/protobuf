@@ -17,28 +17,15 @@ INCLUDE (CheckLibraryExists)
 INCLUDE (CheckSymbolExists)
 INCLUDE (CheckTypeSize)
 
-set(PTHREAD_CXX_FLAG  "")
-set(PTHREAD_LINK_FLAG "")
-set(PTHREAD_LINK_LIB  "")
-if (NOT WIN32)
- # If both pthread.h and pthread library file are found
- CHECK_INCLUDE_FILE("pthread.h" HAVE_PTHREAD_H)
- CHECK_LIBRARY_EXISTS("pthread" pthread_exit ""  HAVE_PTHREAD_LIB)
- # Then define HAVE_PTHREAD
- if (DEFINED HAVE_PTHREAD_H AND DEFINED HAVE_PTHREAD_LIB)
-  set(HAVE_PTHREAD 1)
-  set(PTHREAD_CXX_FLAG  "-pthread")
-  set(PTHREAD_LINK_FLAG "-pthread")
-  set(PTHREAD_LINK_LIB  "pthread")
- endif()
-endif()
+find_package(Threads)
+if (Threads_FOUND)
+ set(HAVE_PTHREAD 1)
+endif ()
 
 # Enable classes using zlib compression
 find_package(ZLIB)
-set(ZLIB_LINK_LIB "")
 if (ZLIB_FOUND)
  set(HAVE_ZLIB 1)
- set(ZLIB_LINK_LIB "z")
 endif ()
 
 # A test framework used internally by protobuf

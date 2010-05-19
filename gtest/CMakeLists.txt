@@ -16,17 +16,11 @@ add_library(gtest
             src/gtest-port.cc
             src/gtest-test-part.cc
             src/gtest-typed-test.cc)
-set_target_properties(gtest           PROPERTIES
-                      CMAKE_CXX_FLAGS "${PTHREAD_CXX_FLAG}"
-                      LINK_FLAGS      "${PTHREAD_LINK_FLAG}")
-target_link_libraries(gtest "${PTHREAD_LINK_LIB}")
+target_link_libraries(gtest "${CMAKE_THREAD_LIBS_INIT}")
 
 # gtest_main library
 add_library(gtest_main src/gtest_main.cc)
-set_target_properties(gtest_main     PROPERTIES
-                      CMAKE_CXX_FLAGS "${PTHREAD_CXX_FLAG}"
-                      LINK_FLAGS      "${PTHREAD_LINK_FLAG}")
-target_link_libraries(gtest_main gtest "${PTHREAD_LINK_LIB}")
+target_link_libraries(gtest_main gtest "${CMAKE_THREAD_LIBS_INIT}")
 
 add_subdirectory(samples)
 add_subdirectory(test)
