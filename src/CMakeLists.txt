@@ -122,8 +122,10 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake.in
                ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
 # Include directories for this project
+if (ZLIB_FOUND)
+include_directories(${ZLIB_INCLUDE_DIRS})
+endif ()
 include_directories(
- ${ZLIB_INCLUDE_DIRS}
  ${CMAKE_CURRENT_BINARY_DIR}
  ${CMAKE_CURRENT_SOURCE_DIR}
  ${CMAKE_SOURCE_DIR}
@@ -165,7 +167,7 @@ set(LIBPROTOBUF_SOURCES
  google/protobuf/compiler/importer.cc
  google/protobuf/compiler/parser.cc)
 add_library(protobuf ${LIBPROTOBUF_SOURCES})
-target_link_libraries(protobuf ${CMAKE_THREAD_LIBS_INIT} ${ZLIB_LIBRARIES})
+target_link_libraries(protobuf ${THREAD_LINK_LIB} ${ZLIB_LINK_LIB})
 
 # protobuf-lite library
 set(PROTOBUF_LITE_SOURCES
@@ -181,7 +183,7 @@ set(PROTOBUF_LITE_SOURCES
  google/protobuf/io/zero_copy_stream.cc
  google/protobuf/io/zero_copy_stream_impl_lite.cc)
 add_library(protobuf-lite ${PROTOBUF_LITE_SOURCES})
-target_link_libraries(protobuf-lite ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(protobuf-lite ${THREAD_LINK_LIB})
 
 # protoc library
 set(LIBPROTOC_SOURCES
@@ -217,7 +219,7 @@ set(LIBPROTOC_SOURCES
  google/protobuf/compiler/python/python_generator.cc)
 link_directories(${LIBRARY_OUTPUT_PATH})
 add_library(protoc ${LIBPROTOC_SOURCES})
-target_link_libraries(protoc ${CMAKE_THREAD_LIBS_INIT} protobuf)
+target_link_libraries(protoc ${THREAD_LINK_LIB} protobuf)
 
 # protoc executable
 link_directories(${LIBRARY_OUTPUT_PATH})
@@ -225,10 +227,10 @@ add_executable(protoc_compiler google/protobuf/compiler/main.cc)
 set_target_properties(protoc_compiler PROPERTIES
                       OUTPUT_NAME     protoc)
 target_link_libraries(protoc_compiler
-                      ${CMAKE_THREAD_LIBS_INIT}
+                      ${THREAD_LINK_LIB}
                       protobuf
                       protoc
-                      ${ZLIB_LIBRARIES})
+                      ${ZLIB_LINK_LIB})
 get_target_property(protoc_compiler_location protoc_compiler LOCATION)
 
 # Generate test sources
@@ -319,12 +321,12 @@ add_executable(protobuf_test
                ${PROTOBUF_TEST_SOURCES}
                ${COMMON_TEST_SOURCES}
                ${PROTOC_OUTPUTS})
-target_link_libraries(protobuf_test ${CMAKE_THREAD_LIBS_INIT}
+target_link_libraries(protobuf_test ${THREAD_LINK_LIB}
                                     protobuf
                                     protoc
                                     gtest
                                     gtest_main
-                                    ${ZLIB_LIBRARIES})
+                                    ${ZLIB_LINK_LIB})
 add_test(protobuf_test ${EXECUTABLE_OUTPUT_PATH}/protobuf_test)
 
 # protobuf-lazy-descriptor-test
@@ -335,11 +337,11 @@ add_executable(protobuf_lazy_descriptor_test
 set_target_properties(protobuf_lazy_descriptor_test PROPERTIES
                       COMPILE_DEFINITIONS "PROTOBUF_TEST_NO_DESCRIPTORS")
 target_link_libraries(protobuf_lazy_descriptor_test
-                      ${CMAKE_THREAD_LIBS_INIT}
+                      ${THREAD_LINK_LIB}
                       protobuf
                       gtest
                       gtest_main
-                      ${ZLIB_LIBRARIES})
+                      ${ZLIB_LINK_LIB})
 add_test(protobuf_lazy_descriptor_test ${EXECUTABLE_OUTPUT_PATH}/protobuf_lazy_descriptor_test)
 
 # lite-unittest
@@ -348,9 +350,9 @@ add_executable(lite_unittest
                google/protobuf/test_util_lite.cc
                ${PROTOC_LITE_OUTPUTS})
 target_link_libraries(lite_unittest
-                      ${CMAKE_THREAD_LIBS_INIT}
+                      ${THREAD_LINK_LIB}
                       protobuf-lite
-                      ${ZLIB_LIBRARIES})
+                      ${ZLIB_LINK_LIB})
 add_test(lite_unittest ${EXECUTABLE_OUTPUT_PATH}/lite_unittest)
 
 # plugins
@@ -364,11 +366,11 @@ set_target_properties(test_plugin PROPERTIES
                       RUNTIME_OUTPUT_DIRECTORY_DEBUG   "${CMAKE_BINARY_DIR}/src"
                       RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/src")
 target_link_libraries(test_plugin
-                      ${CMAKE_THREAD_LIBS_INIT}
+                      ${THREAD_LINK_LIB}
                       protobuf
                       protoc
                       gtest
-                      ${ZLIB_LIBRARIES})
+                      ${ZLIB_LINK_LIB})
 # test_plugin by itself is not a valid test program,
 # it is used with/called by protobuf_test which is the main
 # test program to test plugin facility.
@@ -378,11 +380,11 @@ target_link_libraries(test_plugin
 if (ZLIB_FOUND)
  set(ZCGZIP_SOURCES google/protobuf/testing/zcgzip.cc)
  add_executable(zcgzip ${ZCGZIP_SOURCES})
- target_link_libraries(zcgzip ${CMAKE_THREAD_LIBS_INIT} protobuf ${ZLIB_LIBRARIES})
+ target_link_libraries(zcgzip ${THREAD_LINK_LIB} protobuf ${ZLIB_LINK_LIB})
 
  set(ZCGUNZIP_SOURCES google/protobuf/testing/zcgunzip.cc)
  add_executable(zcgunzip ${ZCGUNZIP_SOURCES})
- target_link_libraries(zcgunzip ${CMAKE_THREAD_LIBS_INIT} protobuf ${ZLIB_LIBRARIES})
+ target_link_libraries(zcgunzip ${THREAD_LINK_LIB} protobuf ${ZLIB_LINK_LIB})
 
  # I went through the original Makefile.am file and cannot find any useage
  # of these files. Actually, when I removed these files from the test directory

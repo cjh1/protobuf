@@ -18,15 +18,19 @@ INCLUDE (CheckSymbolExists)
 INCLUDE (CheckTypeSize)
 
 find_package(Threads)
+set(THREAD_LINK_LIB "")
 if (Threads_FOUND)
  set(HAVE_PTHREAD 1)
+ set(THREAD_LINK_LIB ${CMAKE_THREAD_LIBS_INIT})
 endif ()
 
 # Enable classes using zlib compression
 find_package(ZLIB)
+set(ZLIB_LINK_LIB "")
 if (ZLIB_FOUND)
  set(HAVE_ZLIB 1)
-endif ()
+ set(ZLIB_LINK_LIB ${ZLIB_LIBRARIES})
+endif (ZLIB_FOUND)
 
 # A test framework used internally by protobuf
 # protobuf test cases use this

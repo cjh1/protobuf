@@ -16,11 +16,11 @@ add_library(gtest
             src/gtest-port.cc
             src/gtest-test-part.cc
             src/gtest-typed-test.cc)
-target_link_libraries(gtest "${CMAKE_THREAD_LIBS_INIT}")
+target_link_libraries(gtest "${THREAD_LINK_LIB}")
 
 # gtest_main library
 add_library(gtest_main src/gtest_main.cc)
-target_link_libraries(gtest_main gtest "${CMAKE_THREAD_LIBS_INIT}")
+target_link_libraries(gtest_main gtest "${THREAD_LINK_LIB}")
 
 add_subdirectory(samples)
 add_subdirectory(test)
