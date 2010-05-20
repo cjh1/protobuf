@@ -167,6 +167,10 @@ set(LIBPROTOBUF_SOURCES
  google/protobuf/compiler/importer.cc
  google/protobuf/compiler/parser.cc)
 add_library(protobuf ${LIBPROTOBUF_SOURCES})
+if (WIN32 AND BUILD_SHARED_LIBS)
+ set_target_properties(protobuf PROPERTIES
+                       COMPILE_DEFINITIONS LIBPROTOBUF_EXPORTS)
+endif (WIN32 AND BUILD_SHARED_LIBS)
 target_link_libraries(protobuf ${THREAD_LINK_LIB} ${ZLIB_LINK_LIB})
 
 # protobuf-lite library
@@ -183,6 +187,10 @@ set(PROTOBUF_LITE_SOURCES
  google/protobuf/io/zero_copy_stream.cc
  google/protobuf/io/zero_copy_stream_impl_lite.cc)
 add_library(protobuf-lite ${PROTOBUF_LITE_SOURCES})
+if (WIN32 AND BUILD_SHARED_LIBS)
+ set_target_properties(protobuf-lite PROPERTIES
+                       COMPILE_DEFINITIONS LIBPROTOBUF_EXPORTS)
+endif (WIN32 AND BUILD_SHARED_LIBS)
 target_link_libraries(protobuf-lite ${THREAD_LINK_LIB})
 
 # protoc library
@@ -219,6 +227,10 @@ set(LIBPROTOC_SOURCES
  google/protobuf/compiler/python/python_generator.cc)
 link_directories(${LIBRARY_OUTPUT_PATH})
 add_library(protoc ${LIBPROTOC_SOURCES})
+if (WIN32 AND BUILD_SHARED_LIBS)
+ set_target_properties(protoc PROPERTIES
+                       COMPILE_DEFINITIONS LIBPROTOC_EXPORTS)
+endif (WIN32 AND BUILD_SHARED_LIBS)
 target_link_libraries(protoc ${THREAD_LINK_LIB} protobuf)
 
 # protoc executable
@@ -263,7 +275,7 @@ foreach(PROTOBUF_SAMPLE_INPUT ${PROTOC_INPUTS})
                              ARGS ${CMAKE_CURRENT_SOURCE_DIR}/${PROTOBUF_SAMPLE_INPUT}.proto
                                   --proto_path="${CMAKE_CURRENT_SOURCE_DIR}"
                                   --cpp_out="${CMAKE_BINARY_DIR}/src")
- endif()
+ endif(WIN32)
 endforeach()
 
 # Tests ==============================================================
@@ -359,8 +371,8 @@ add_test(lite_unittest ${EXECUTABLE_OUTPUT_PATH}/lite_unittest)
 add_executable(test_plugin
                google/protobuf/compiler/mock_code_generator.cc
                google/protobuf/testing/file.cc
-               google/protobuf/compiler/test_plugin.cc
-               ${PROTOC_LITE_OUTPUTS})
+               google/protobuf/compiler/test_plugin.cc)
+#               ${PROTOC_LITE_OUTPUTS})
 set_target_properties(test_plugin PROPERTIES
                       RUNTIME_OUTPUT_DIRECTORY         "${CMAKE_BINARY_DIR}/src"
                       RUNTIME_OUTPUT_DIRECTORY_DEBUG   "${CMAKE_BINARY_DIR}/src"

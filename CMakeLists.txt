@@ -1,11 +1,13 @@
 cmake_minimum_required(VERSION 2.8)
 project(protobuf)
 
-if (WIN32)
- OPTION(BUILD_SHARED_LIBS "Build shard protobuf library" OFF)
-else (WIN32)
+if (NOT WIN32)
  OPTION(BUILD_SHARED_LIBS "Build shard protobuf library" ON)
-endif (WIN32)
+endif (NOT WIN32)
+
+if (WIN32 AND BUILD_SHARED_LIBS)
+ add_definitions(-DPROTOBUF_USE_DLLS)
+endif (WIN32 AND BUILD_SHARED_LIBS)
 
 # Direct all binary outputs to one directory
 set(LIBRARY_OUTPUT_PATH    ${CMAKE_CURRENT_BINARY_DIR}/bin CACHE INTERNAL "")

@@ -1,8 +1,14 @@
 #Generate samples library
-add_library(samples
-            sample1.cc
-            sample2.cc
-            sample4.cc)
+set(GTEST_SAMPLE_SOURCES
+    sample1.cc
+    sample2.cc
+    sample4.cc)
+if (WIN32)
+ add_library(samples STATIC ${GTEST_SAMPLE_SOURCES})
+else (WIN32)
+ add_library(samples ${GTEST_SAMPLE_SOURCES})
+endif (WIN32)
+
 target_link_libraries(samples gtest gtest_main ${THREAD_LINK_LIB})
 
 # Generate sample unit tests
