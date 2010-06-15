@@ -441,3 +441,5 @@ foreach(EXTRA_DIST_I
                 ${CMAKE_BINARY_DIR}/src/${EXTRA_DIST_I}
                 COPYONLY)
 endforeach(EXTRA_DIST_I)
+
+export(TARGETS protobuf protobuf-lite protoc protoc_compiler FILE "${PROTOBUF_EXPORTS_FILE}")

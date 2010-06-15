@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.6)
 project(protobuf)
 
+set (PROTOBUF_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set (PROTOBUF_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+
 if (NOT WIN32)
  OPTION(BUILD_SHARED_LIBS "Build shard protobuf library" ON)
 endif (NOT WIN32)
@@ -12,6 +15,14 @@ endif (WIN32 AND BUILD_SHARED_LIBS)
 # Direct all binary outputs to one directory
 set(LIBRARY_OUTPUT_PATH    ${CMAKE_CURRENT_BINARY_DIR}/bin CACHE INTERNAL "")
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR}/bin CACHE INTERNAL "")
+
+# Set up protobuf include directories, and the export file
+set(PROTOBUF_INCLUDE_DIRS
+  "${PROTOBUF_SOURCE_DIR}/src"
+  "${PROTOBUF_BINARY_DIR}/src")
+include_directories(${protobuf_INCLUDE_DIRS})
+set(PROTOBUF_EXPORTS_FILE "${PROTOBUF_BINARY_DIR}/PROTOBUF_EXPORTS.cmake")
+file(REMOVE "${PROTOBUF_EXPORTS_FILE}")
 
 enable_testing()
 
@@ -44,3 +55,7 @@ add_subdirectory(gtest)
 
 # Source code for protobuf and its test cases
 add_subdirectory(src)
+
+# Create the configure file for protobuf
+configure_file("${PROTOBUF_SOURCE_DIR}/protobufConfig.cmake.in"
+  "${PROTOBUF_BINARY_DIR}/protobufConfig.cmake" @ONLY)
