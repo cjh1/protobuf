@@ -5,7 +5,7 @@ set (PROTOBUF_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set (PROTOBUF_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
 if (NOT WIN32)
- OPTION(BUILD_SHARED_LIBS "Build shard protobuf library" ON)
+ OPTION(BUILD_SHARED_LIBS "Build shared protobuf library" ON)
 endif (NOT WIN32)
 
 if (WIN32 AND BUILD_SHARED_LIBS)
@@ -24,7 +24,7 @@ include_directories(${protobuf_INCLUDE_DIRS})
 set(PROTOBUF_EXPORTS_FILE "${PROTOBUF_BINARY_DIR}/PROTOBUF_EXPORTS.cmake")
 file(REMOVE "${PROTOBUF_EXPORTS_FILE}")
 
-enable_testing()
+option(protobuf_ENABLE_TESTING "Enable and build protobuf tests" OFF)
 
 INCLUDE (CheckFunctionExists)
 INCLUDE (CheckIncludeFile)
@@ -49,9 +49,12 @@ if (ZLIB_FOUND)
  set(ZLIB_LINK_LIB ${ZLIB_LIBRARIES})
 endif (ZLIB_FOUND)
 
-# A test framework used internally by protobuf
-# protobuf test cases use this
-add_subdirectory(gtest)
+if(protobuf_ENABLE_TESTING)
+  enable_testing()
+  # A test framework used internally by protobuf
+  # protobuf test cases use this
+  add_subdirectory(gtest)
+endif()
 
 # Source code for protobuf and its test cases
 add_subdirectory(src)
