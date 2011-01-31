@@ -445,3 +445,8 @@ if(protobuf_ENABLE_TESTING)
 endif() # End of tests (only compiled when requested now.
 
 export(TARGETS protobuf protobuf-lite protoc protoc_compiler FILE "${PROTOBUF_EXPORTS_FILE}")
+install (TARGETS protobuf protobuf-lite
+  EXPORT ${PROTOBUF_INSTALL_EXPORT_NAME}
+  RUNTIME DESTINATION ${PROTOBUF_INSTALL_BIN_DIR} COMPONENT Runtime
+  LIBRARY DESTINATION ${PROTOBUF_INSTALL_LIB_DIR} COMPONENT Runtime
+  ARCHIVE DESTINATION ${PROTOBUF_INSTALL_LIB_DIR} COMPONENT Development)
