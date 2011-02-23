@@ -18,6 +18,26 @@ if (NOT WIN32)
  OPTION(BUILD_SHARED_LIBS "Build shared protobuf library" ON)
 endif (NOT WIN32)
 
+#disable compiler warnings from the protobuf library
+option(PROTOBUF_DISABLE_COMPILER_WARNINGS "Disable compiler warnings" ON)
+mark_as_advanced(PROTOBUF_DISABLE_COMPILER_WARNINGS)
+if(PROTOBUF_DISABLE_COMPILER_WARNINGS)
+  if(WIN32)
+    if (MSVC)
+      string(REGEX REPLACE "(^| )([/-])W[0-9]( |$)" " "
+          CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+      set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} /w")
+
+      string(REGEX REPLACE "(^| )([/-])W[0-9]( |$)" " "
+          CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /w")
+    endif(MSVC)
+  else(WIN32)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -w")
+    set (CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -w")
+  endif(WIN32)
+endif(PROTOBUF_DISABLE_COMPILER_WARNINGS)
+
 if (WIN32 AND BUILD_SHARED_LIBS)
  add_definitions(-DPROTOBUF_USE_DLLS)
 endif (WIN32 AND BUILD_SHARED_LIBS)
