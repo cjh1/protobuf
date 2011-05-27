@@ -235,15 +235,22 @@ target_link_libraries(protoc ${THREAD_LINK_LIB} protobuf)
 
 # protoc executable
 link_directories(${LIBRARY_OUTPUT_PATH})
-add_executable(protoc_compiler google/protobuf/compiler/main.cc)
-set_target_properties(protoc_compiler PROPERTIES
-                      OUTPUT_NAME     protoc)
-target_link_libraries(protoc_compiler
-                      ${THREAD_LINK_LIB}
-                      protobuf
-                      protoc
-                      ${ZLIB_LINK_LIB})
-get_target_property(protoc_compiler_location protoc_compiler LOCATION)
+
+IF(NOT CMAKE_CROSSCOMPILING)
+   add_executable(protoc_compiler google/protobuf/compiler/main.cc)
+   set_target_properties(protoc_compiler PROPERTIES
+                         OUTPUT_NAME     protoc)
+   target_link_libraries(protoc_compiler
+                         ${THREAD_LINK_LIB}
+                         protobuf
+                         protoc
+                         ${ZLIB_LINK_LIB})
+   get_target_property(protoc_compiler_location protoc_compiler LOCATION)
+   EXPORT(TARGETS protoc_compiler
+          FILE ${EXPORT_EXECUTABLES_FILE}
+          NAMESPACE "${EXPORT_EXECUTABLES_NAMESPACE}"
+          APPEND)
+ENDIF(NOT CMAKE_CROSSCOMPILING)
 
 if(protobuf_ENABLE_TESTING)
   # Generate test sources
@@ -444,9 +451,18 @@ if(protobuf_ENABLE_TESTING)
   endforeach(EXTRA_DIST_I)
 endif() # End of tests (only compiled when requested now.
 
-export(TARGETS protobuf protobuf-lite protoc protoc_compiler FILE "${PROTOBUF_EXPORTS_FILE}")
+IF(NOT CMAKE_CROSSCOMPILING)
+  export(TARGETS protobuf protobuf-lite protoc protoc_compiler FILE "${PROTOBUF_EXPORTS_FILE}")
+ELSE(NOT CMAKE_CROSSCOMPILING)
+  export(TARGETS protobuf protobuf-lite protoc FILE "${PROTOBUF_EXPORTS_FILE}")
+ENDIF(NOT CMAKE_CROSSCOMPILING)
+
 install (TARGETS protobuf protobuf-lite
   EXPORT ${PROTOBUF_INSTALL_EXPORT_NAME}
   RUNTIME DESTINATION ${PROTOBUF_INSTALL_BIN_DIR} COMPONENT Runtime
   LIBRARY DESTINATION ${PROTOBUF_INSTALL_LIB_DIR} COMPONENT Runtime
   ARCHIVE DESTINATION ${PROTOBUF_INSTALL_LIB_DIR} COMPONENT Development)
+
+IF(COMPILE_TOOLS_TARGET)
+  ADD_DEPENDENCIES(${COMPILE_TOOLS_TARGET} protoc_compiler)
+ENDIF(COMPILE_TOOLS_TARGET)
