@@ -89,8 +89,8 @@ typedef bool EnumValidityFuncWithArg(const void* arg, int number);
 // Information about a registered extension.
 struct ExtensionInfo {
   inline ExtensionInfo() {}
-  inline ExtensionInfo(FieldType type, bool is_repeated, bool is_packed)
-      : type(type), is_repeated(is_repeated), is_packed(is_packed),
+  inline ExtensionInfo(FieldType _type, bool _is_repeated, bool _is_packed)
+      : type(_type), is_repeated(_is_repeated), is_packed(_is_packed),
         descriptor(NULL) {}
 
   FieldType type;
@@ -763,8 +763,8 @@ class ExtensionIdentifier {
   typedef TypeTraitsType TypeTraits;
   typedef ExtendeeType Extendee;
 
-  ExtensionIdentifier(int number, typename TypeTraits::ConstType default_value)
-      : number_(number), default_value_(default_value) {}
+  ExtensionIdentifier(int _number, typename TypeTraits::ConstType _default_value)
+      : number_(_number), default_value_(_default_value) {}
   inline int number() const { return number_; }
   typename TypeTraits::ConstType default_value() const {
     return default_value_;
