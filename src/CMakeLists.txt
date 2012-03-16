@@ -6,6 +6,24 @@ set(PACKAGE_TARNAME   "protobuf")
 set(PACKAGE_VERSION   "2.3.0")
 set(PACKAGE_STRING    "Protocal Buffers 2.3.0")
 
+#------------------------------------------------------------------------------
+# Setup RPATH settings to ensure that the protoc exetuble can be run correctly
+# in various build environments (linux/mac).
+#------------------------------------------------------------------------------
+
+# use, i.e. don't skip the full RPATH for the build tree
+SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+
+# when building, don't use the install RPATH already
+# (but later on when installing)
+SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+
+# add the automatically determined parts of the RPATH
+# which point to directories outside the build tree to the install RPATH
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+#--------------------------------------------------------------------------
+
 CHECK_INCLUDE_FILE("dlfcn.h"     HAVE_DLFCN_H)
 CHECK_INCLUDE_FILE("inttypes.h"  HAVE_INTTYPES_H)
 CHECK_INCLUDE_FILE("memory.h"    HAVE_MEMORY_H)
@@ -164,13 +182,22 @@ set(LIBPROTOBUF_SOURCES
  google/protobuf/text_format.cc
  google/protobuf/unknown_field_set.cc
  google/protobuf/wire_format.cc
- google/protobuf/io/gzip_stream.cc
  google/protobuf/io/printer.cc
  google/protobuf/io/tokenizer.cc
  google/protobuf/io/zero_copy_stream_impl.cc
  google/protobuf/compiler/importer.cc
  google/protobuf/compiler/parser.cc)
-add_library(protobuf ${LIBPROTOBUF_SOURCES})
+if (ZLIB_FOUND)
+  # Keeping the ZLIB dependent source file separate makes it possible to build
+  # protoc executable without any zlib dependecies. Any extra depedencies on
+  # protoc executable make it complicated to use the executable during build
+  # steps for projects such as ParaView since they require the environment to
+  # be set up correctly hence we avoid as such dependencies on protoc at all
+  # costs!!!
+  set (LIBPROTOBUF_SOURCES_EXTRA
+        google/protobuf/io/gzip_stream.cc)
+endif()
+add_library(protobuf ${LIBPROTOBUF_SOURCES} ${LIBPROTOBUF_SOURCES_EXTRA})
 if (WIN32 AND BUILD_SHARED_LIBS)
  set_target_properties(protobuf PROPERTIES
                        COMPILE_DEFINITIONS LIBPROTOBUF_EXPORTS)
@@ -230,6 +257,8 @@ set(LIBPROTOC_SOURCES
  google/protobuf/compiler/java/java_service.cc
  google/protobuf/compiler/python/python_generator.cc)
 link_directories(${LIBRARY_OUTPUT_PATH})
+# protoc executable no longer depends on the protoc library. But other projects
+# might depend on it so we leave it untouched.
 add_library(protoc ${LIBPROTOC_SOURCES})
 if (WIN32 AND BUILD_SHARED_LIBS)
  set_target_properties(protoc PROPERTIES
@@ -239,16 +268,18 @@ target_link_libraries(protoc ${THREAD_LINK_LIB} protobuf)
 
 # protoc executable
 link_directories(${LIBRARY_OUTPUT_PATH})
-
 IF(NOT CMAKE_CROSSCOMPILING)
-   add_executable(protoc_compiler google/protobuf/compiler/main.cc)
+  # We build the protoc executable without any dependencies on libraries built
+  # here viz. protobuf/protoc. This avoids unnecessary build-time
+  # complications when using protoc to generate headers in projects.
+   add_executable(protoc_compiler
+      google/protobuf/compiler/main.cc
+      ${LIBPROTOC_SOURCES}
+      ${LIBPROTOBUF_SOURCES})
    set_target_properties(protoc_compiler PROPERTIES
                          OUTPUT_NAME     protoc)
    target_link_libraries(protoc_compiler
-                         ${THREAD_LINK_LIB}
-                         protobuf
-                         protoc
-                         ${ZLIB_LINK_LIB})
+                         ${THREAD_LINK_LIB})
    get_target_property(protoc_compiler_location protoc_compiler LOCATION)
    EXPORT(TARGETS protoc_compiler
           FILE ${EXPORT_EXECUTABLES_FILE}
@@ -347,7 +378,6 @@ if(protobuf_ENABLE_TESTING)
                  ${PROTOC_OUTPUTS})
   target_link_libraries(protobuf_test ${THREAD_LINK_LIB}
                         protobuf
-                        protoc
                         gtest
                         gtest_main
                         ${ZLIB_LINK_LIB})
@@ -392,7 +422,6 @@ if(protobuf_ENABLE_TESTING)
   target_link_libraries(test_plugin
                         ${THREAD_LINK_LIB}
                         protobuf
-                        protoc
                         gtest
                         ${ZLIB_LINK_LIB})
   # test_plugin by itself is not a valid test program,
