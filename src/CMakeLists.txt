@@ -200,7 +200,7 @@ endif()
 add_library(protobuf ${LIBPROTOBUF_SOURCES} ${LIBPROTOBUF_SOURCES_EXTRA})
 if (WIN32 AND BUILD_SHARED_LIBS)
  set_target_properties(protobuf PROPERTIES
-                       COMPILE_DEFINITIONS LIBPROTOBUF_EXPORTS)
+                       COMPILE_DEFINITIONS "LIBPROTOBUF_EXPORTS;PROTOBUF_USE_DLLS")
 endif (WIN32 AND BUILD_SHARED_LIBS)
 target_link_libraries(protobuf ${THREAD_LINK_LIB} ${ZLIB_LINK_LIB})
 
@@ -220,7 +220,7 @@ set(PROTOBUF_LITE_SOURCES
 add_library(protobuf-lite ${PROTOBUF_LITE_SOURCES})
 if (WIN32 AND BUILD_SHARED_LIBS)
  set_target_properties(protobuf-lite PROPERTIES
-                       COMPILE_DEFINITIONS LIBPROTOBUF_EXPORTS)
+                       COMPILE_DEFINITIONS "LIBPROTOBUF_EXPORTS;PROTOBUF_USE_DLLS")
 endif (WIN32 AND BUILD_SHARED_LIBS)
 target_link_libraries(protobuf-lite ${THREAD_LINK_LIB})
 
@@ -262,7 +262,7 @@ link_directories(${LIBRARY_OUTPUT_PATH})
 add_library(protoc ${LIBPROTOC_SOURCES})
 if (WIN32 AND BUILD_SHARED_LIBS)
  set_target_properties(protoc PROPERTIES
-                       COMPILE_DEFINITIONS LIBPROTOC_EXPORTS)
+                       COMPILE_DEFINITIONS "LIBPROTOC_EXPORTS;PROTOBUF_USE_DLLS")
 endif (WIN32 AND BUILD_SHARED_LIBS)
 target_link_libraries(protoc ${THREAD_LINK_LIB} protobuf)
 
@@ -281,10 +281,12 @@ IF(NOT CMAKE_CROSSCOMPILING)
    target_link_libraries(protoc_compiler
                          ${THREAD_LINK_LIB})
    get_target_property(protoc_compiler_location protoc_compiler LOCATION)
-   EXPORT(TARGETS protoc_compiler
-          FILE ${EXPORT_EXECUTABLES_FILE}
-          NAMESPACE "${EXPORT_EXECUTABLES_NAMESPACE}"
-          APPEND)
+   if (EXPORT_EXECUTABLES_FILE)
+     EXPORT(TARGETS protoc_compiler
+            FILE ${EXPORT_EXECUTABLES_FILE}
+            NAMESPACE "${EXPORT_EXECUTABLES_NAMESPACE}"
+            APPEND)
+   endif (EXPORT_EXECUTABLES_FILE)
 ENDIF(NOT CMAKE_CROSSCOMPILING)
 
 if(protobuf_ENABLE_TESTING)

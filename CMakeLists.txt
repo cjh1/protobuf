@@ -15,8 +15,8 @@ IF (NOT PROTOBUF_INSTALL_EXPORT_NAME)
 ENDIF()
 
 if (NOT WIN32)
- OPTION(BUILD_SHARED_LIBS "Build shared protobuf library" ON)
-endif (NOT WIN32)
+  OPTION(BUILD_SHARED_LIBS "Build shared protobuf library" ON)
+endif()
 
 #disable compiler warnings from the protobuf library
 option(PROTOBUF_DISABLE_COMPILER_WARNINGS "Disable compiler warnings" ON)
@@ -38,9 +38,12 @@ if(PROTOBUF_DISABLE_COMPILER_WARNINGS)
   endif(WIN32)
 endif(PROTOBUF_DISABLE_COMPILER_WARNINGS)
 
-if (WIN32 AND BUILD_SHARED_LIBS)
- add_definitions(-DPROTOBUF_USE_DLLS)
-endif (WIN32 AND BUILD_SHARED_LIBS)
+# PROTOBUF_USE_DLLS is added on per target basis (see src/CMakeLists.txt). If we
+# add this globally, then we get errors when building the static executable
+# "protoc".
+#if (WIN32 AND BUILD_SHARED_LIBS)
+# add_definitions(-DPROTOBUF_USE_DLLS)
+#endif (WIN32 AND BUILD_SHARED_LIBS)
 
 # Direct all binary outputs to one directory
 if(NOT LIBRARY_OUTPUT_PATH)
