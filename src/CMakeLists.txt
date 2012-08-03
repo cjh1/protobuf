@@ -281,12 +281,6 @@ IF(NOT CMAKE_CROSSCOMPILING)
    target_link_libraries(protoc_compiler
                          ${THREAD_LINK_LIB})
    get_target_property(protoc_compiler_location protoc_compiler LOCATION)
-   if (EXPORT_EXECUTABLES_FILE)
-     EXPORT(TARGETS protoc_compiler
-            FILE ${EXPORT_EXECUTABLES_FILE}
-            NAMESPACE "${EXPORT_EXECUTABLES_NAMESPACE}"
-            APPEND)
-   endif (EXPORT_EXECUTABLES_FILE)
 ENDIF(NOT CMAKE_CROSSCOMPILING)
 
 if(protobuf_ENABLE_TESTING)
@@ -487,9 +481,11 @@ if(protobuf_ENABLE_TESTING)
 endif() # End of tests (only compiled when requested now.
 
 IF(NOT CMAKE_CROSSCOMPILING)
-  export(TARGETS protobuf protobuf-lite protoc protoc_compiler FILE "${PROTOBUF_EXPORTS_FILE}")
+  export(TARGETS protobuf protobuf-lite protoc protoc_compiler
+         APPEND FILE "${PROTOBUF_EXPORTS_FILE}")
 ELSE(NOT CMAKE_CROSSCOMPILING)
-  export(TARGETS protobuf protobuf-lite protoc FILE "${PROTOBUF_EXPORTS_FILE}")
+  export(TARGETS protobuf protobuf-lite protoc
+         APPEND FILE "${PROTOBUF_EXPORTS_FILE}")
 ENDIF(NOT CMAKE_CROSSCOMPILING)
 
 install (TARGETS protobuf protobuf-lite
