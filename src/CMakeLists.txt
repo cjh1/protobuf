@@ -257,14 +257,15 @@ set(LIBPROTOC_SOURCES
  google/protobuf/compiler/java/java_service.cc
  google/protobuf/compiler/python/python_generator.cc)
 link_directories(${LIBRARY_OUTPUT_PATH})
-# protoc executable no longer depends on the protoc library. But other projects
-# might depend on it so we leave it untouched.
-add_library(protoc ${LIBPROTOC_SOURCES})
-if (WIN32 AND BUILD_SHARED_LIBS)
- set_target_properties(protoc PROPERTIES
-                       COMPILE_DEFINITIONS "LIBPROTOC_EXPORTS;PROTOBUF_USE_DLLS")
-endif (WIN32 AND BUILD_SHARED_LIBS)
-target_link_libraries(protoc ${THREAD_LINK_LIB} protobuf)
+# Removing protoc lib since it's causing build issues with Ninja generator on
+# Windows. protoc_compiler doesn't depend on protoc lib anyways. That dependency
+# was removed a while ago to avoid shared library issues.
+#add_library(protoc ${LIBPROTOC_SOURCES})
+#if (WIN32 AND BUILD_SHARED_LIBS)
+# set_target_properties(protoc PROPERTIES
+#                       COMPILE_DEFINITIONS "LIBPROTOC_EXPORTS;PROTOBUF_USE_DLLS")
+#endif (WIN32 AND BUILD_SHARED_LIBS)
+#target_link_libraries(protoc ${THREAD_LINK_LIB} protobuf)
 
 # protoc executable
 link_directories(${LIBRARY_OUTPUT_PATH})
@@ -481,10 +482,10 @@ if(protobuf_ENABLE_TESTING)
 endif() # End of tests (only compiled when requested now.
 
 IF(NOT CMAKE_CROSSCOMPILING)
-  export(TARGETS protobuf protobuf-lite protoc protoc_compiler
+  export(TARGETS protobuf protobuf-lite protoc_compiler
          APPEND FILE "${PROTOBUF_EXPORTS_FILE}")
 ELSE(NOT CMAKE_CROSSCOMPILING)
-  export(TARGETS protobuf protobuf-lite protoc
+  export(TARGETS protobuf protobuf-lite
          APPEND FILE "${PROTOBUF_EXPORTS_FILE}")
 ENDIF(NOT CMAKE_CROSSCOMPILING)
 
