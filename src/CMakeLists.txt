@@ -228,10 +228,6 @@ target_link_libraries(protobuf-lite ${THREAD_LINK_LIB})
 set(LIBPROTOC_SOURCES
  google/protobuf/compiler/code_generator.cc
  google/protobuf/compiler/command_line_interface.cc
- google/protobuf/compiler/plugin.cc
- google/protobuf/compiler/plugin.pb.cc
- google/protobuf/compiler/subprocess.cc
- google/protobuf/compiler/zip_writer.cc
  google/protobuf/compiler/cpp/cpp_enum.cc
  google/protobuf/compiler/cpp/cpp_enum_field.cc
  google/protobuf/compiler/cpp/cpp_extension.cc
@@ -244,18 +240,11 @@ set(LIBPROTOC_SOURCES
  google/protobuf/compiler/cpp/cpp_primitive_field.cc
  google/protobuf/compiler/cpp/cpp_service.cc
  google/protobuf/compiler/cpp/cpp_string_field.cc
- google/protobuf/compiler/java/java_enum.cc
- google/protobuf/compiler/java/java_enum_field.cc
- google/protobuf/compiler/java/java_extension.cc
- google/protobuf/compiler/java/java_field.cc
- google/protobuf/compiler/java/java_file.cc
- google/protobuf/compiler/java/java_generator.cc
- google/protobuf/compiler/java/java_helpers.cc
- google/protobuf/compiler/java/java_message.cc
- google/protobuf/compiler/java/java_message_field.cc
- google/protobuf/compiler/java/java_primitive_field.cc
- google/protobuf/compiler/java/java_service.cc
- google/protobuf/compiler/python/python_generator.cc)
+ google/protobuf/compiler/plugin.cc
+ google/protobuf/compiler/plugin.pb.cc
+ google/protobuf/compiler/subprocess.cc
+ google/protobuf/compiler/zip_writer.cc
+ )
 link_directories(${LIBRARY_OUTPUT_PATH})
 # Removing protoc lib since it's causing build issues with Ninja generator on
 # Windows. protoc_compiler doesn't depend on protoc lib anyways. That dependency
@@ -283,203 +272,6 @@ IF(NOT CMAKE_CROSSCOMPILING)
                          ${THREAD_LINK_LIB})
    get_target_property(protoc_compiler_location protoc_compiler LOCATION)
 ENDIF(NOT CMAKE_CROSSCOMPILING)
-
-if(protobuf_ENABLE_TESTING)
-  # Generate test sources
-  set(PROTOC_INPUTS
-    google/protobuf/unittest
-    google/protobuf/unittest_empty
-    google/protobuf/unittest_import
-    google/protobuf/unittest_mset
-    google/protobuf/unittest_optimize_for
-    google/protobuf/unittest_embed_optimize_for
-    google/protobuf/unittest_custom_options
-    google/protobuf/unittest_lite
-    google/protobuf/unittest_import_lite
-    google/protobuf/unittest_lite_imports_nonlite
-    google/protobuf/unittest_no_generic_services
-    google/protobuf/compiler/cpp/cpp_test_bad_identifiers)
-  foreach(PROTOBUF_SAMPLE_INPUT ${PROTOC_INPUTS})
-    add_custom_command(OUTPUT ${PROTOBUF_SAMPLE_INPUT}.pb.cc
-                              ${PROTOBUF_SAMPLE_INPUT}.pb.h
-                       COMMAND ${protoc_compiler_location}
-                               ARGS ${CMAKE_CURRENT_SOURCE_DIR}/${PROTOBUF_SAMPLE_INPUT}.proto
-                                    --proto_path="${CMAKE_CURRENT_SOURCE_DIR}"
-                                    --cpp_out="${CMAKE_BINARY_DIR}/src"
-                        DEPENDS protoc_compiler ${PROTOBUF_SAMPLE_INPUT}.proto)
-  # I am not quite sure why, buy I have to have this command below to 
-  # make sure it works for Visual Studio
-    if (WIN32)
-      add_custom_command(TARGET protoc_compiler
-                         COMMAND ${protoc_compiler_location}
-                                 ARGS ${CMAKE_CURRENT_SOURCE_DIR}/${PROTOBUF_SAMPLE_INPUT}.proto
-                                      --proto_path="${CMAKE_CURRENT_SOURCE_DIR}"
-                                      --cpp_out="${CMAKE_BINARY_DIR}/src")
-    endif(WIN32)
-  endforeach()
-
-  # Tests ==============================================================
-  set(PROTOC_LITE_OUTPUTS
-    google/protobuf/unittest_lite.pb.cc
-    google/protobuf/unittest_import_lite.pb.cc)
-  set(PROTOC_OUTPUTS ${PROTOC_LITE_OUTPUTS}
-    google/protobuf/unittest.pb.cc
-    google/protobuf/unittest_empty.pb.cc
-    google/protobuf/unittest_import.pb.cc
-    google/protobuf/unittest_mset.pb.cc
-    google/protobuf/unittest_optimize_for.pb.cc
-    google/protobuf/unittest_embed_optimize_for.pb.cc
-    google/protobuf/unittest_custom_options.pb.cc
-    google/protobuf/unittest_lite_imports_nonlite.pb.cc
-    google/protobuf/unittest_no_generic_services.pb.cc
-    google/protobuf/compiler/cpp/cpp_test_bad_identifiers.pb.cc)
-  set(COMMON_TEST_SOURCES
-    google/protobuf/test_util.cc
-    google/protobuf/testing/googletest.cc
-    google/protobuf/testing/file.cc)
-  set(PROTOBUF_TEST_SOURCES
-    google/protobuf/stubs/common_unittest.cc
-    google/protobuf/stubs/once_unittest.cc
-    google/protobuf/stubs/strutil_unittest.cc
-    google/protobuf/stubs/structurally_valid_unittest.cc
-    google/protobuf/descriptor_database_unittest.cc
-    google/protobuf/descriptor_unittest.cc
-    google/protobuf/dynamic_message_unittest.cc
-    google/protobuf/extension_set_unittest.cc
-    google/protobuf/generated_message_reflection_unittest.cc
-    google/protobuf/message_unittest.cc
-    google/protobuf/reflection_ops_unittest.cc
-    google/protobuf/repeated_field_unittest.cc
-    google/protobuf/text_format_unittest.cc
-    google/protobuf/unknown_field_set_unittest.cc
-    google/protobuf/wire_format_unittest.cc
-    google/protobuf/io/coded_stream_unittest.cc
-    google/protobuf/io/printer_unittest.cc
-    google/protobuf/io/tokenizer_unittest.cc
-    google/protobuf/io/zero_copy_stream_unittest.cc
-    google/protobuf/compiler/command_line_interface_unittest.cc
-    google/protobuf/compiler/importer_unittest.cc
-    google/protobuf/compiler/mock_code_generator.cc
-    google/protobuf/compiler/parser_unittest.cc
-    google/protobuf/compiler/cpp/cpp_bootstrap_unittest.cc
-    google/protobuf/compiler/cpp/cpp_unittest.cc
-    google/protobuf/compiler/cpp/cpp_plugin_unittest.cc
-    google/protobuf/compiler/java/java_plugin_unittest.cc
-    google/protobuf/compiler/python/python_plugin_unittest.cc)
-  include_directories(${CMAKE_SOURCE_DIR}/gtest/include ${CMAKE_BINARY_DIR}/src)
-
-  # protobuf-test
-  add_executable(protobuf_test
-                 ${PROTOBUF_TEST_SOURCES}
-                 ${COMMON_TEST_SOURCES}
-                 ${PROTOC_OUTPUTS})
-  target_link_libraries(protobuf_test ${THREAD_LINK_LIB}
-                        protobuf
-                        gtest
-                        gtest_main
-                        ${ZLIB_LINK_LIB})
-  add_test(protobuf_test ${EXECUTABLE_OUTPUT_PATH}/protobuf_test)
-
-  # protobuf-lazy-descriptor-test
-  add_executable(protobuf_lazy_descriptor_test
-                 google/protobuf/compiler/cpp/cpp_unittest.cc
-                 ${COMMON_TEST_SOURCES}
-                 ${PROTOC_OUTPUTS})
-  set_target_properties(protobuf_lazy_descriptor_test PROPERTIES
-                        COMPILE_DEFINITIONS "PROTOBUF_TEST_NO_DESCRIPTORS")
-  target_link_libraries(protobuf_lazy_descriptor_test
-                        ${THREAD_LINK_LIB}
-                        protobuf
-                        gtest
-                        gtest_main
-                        ${ZLIB_LINK_LIB})
-  add_test(protobuf_lazy_descriptor_test ${EXECUTABLE_OUTPUT_PATH}/protobuf_lazy_descriptor_test)
-
-  # lite-unittest
-  add_executable(lite_unittest
-                 google/protobuf/lite_unittest.cc
-                 google/protobuf/test_util_lite.cc
-                 ${PROTOC_LITE_OUTPUTS})
-  target_link_libraries(lite_unittest
-                        ${THREAD_LINK_LIB}
-                        protobuf-lite
-                        ${ZLIB_LINK_LIB})
-  add_test(lite_unittest ${EXECUTABLE_OUTPUT_PATH}/lite_unittest)
-
-  # plugins
-  add_executable(test_plugin
-                 google/protobuf/compiler/mock_code_generator.cc
-                 google/protobuf/testing/file.cc
-                 google/protobuf/compiler/test_plugin.cc)
-#                 ${PROTOC_LITE_OUTPUTS})
-  set_target_properties(test_plugin PROPERTIES
-                        RUNTIME_OUTPUT_DIRECTORY         "${CMAKE_BINARY_DIR}/src"
-                        RUNTIME_OUTPUT_DIRECTORY_DEBUG   "${CMAKE_BINARY_DIR}/src"
-                        RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/src")
-  target_link_libraries(test_plugin
-                        ${THREAD_LINK_LIB}
-                        protobuf
-                        gtest
-                        ${ZLIB_LINK_LIB})
-  # test_plugin by itself is not a valid test program,
-  # it is used with/called by protobuf_test which is the main
-  # test program to test plugin facility.
-  # add_test(test_plugin ${EXECUTABLE_OUTPUT_PATH}/test_plugin)
-
-  # zlib
-  if (ZLIB_FOUND)
-    set(ZCGZIP_SOURCES google/protobuf/testing/zcgzip.cc)
-    add_executable(zcgzip ${ZCGZIP_SOURCES})
-    target_link_libraries(zcgzip ${THREAD_LINK_LIB} protobuf ${ZLIB_LINK_LIB})
-
-    set(ZCGUNZIP_SOURCES google/protobuf/testing/zcgunzip.cc)
-    add_executable(zcgunzip ${ZCGUNZIP_SOURCES})
-    target_link_libraries(zcgunzip ${THREAD_LINK_LIB} protobuf ${ZLIB_LINK_LIB})
-
-    # I went through the original Makefile.am file and cannot find any useage
-    # of these files. Actually, when I removed these files from the test directory
-    # all the tests still run pretty well which leads me to assume that they are
-    # not used.
-    # I also read the source code for zcgzip which seems to me only
-    # read from STDIN and outpu to STDOUT. This suggests that you cannot do
-    # automatical tests with those configurations. Of course, redirection should
-    # be able to make zcgzip work with files. However, I do not see any
-    # redirection operation from the make ckeck command line.
-    # add_test(zcgzip   ${EXECUTABLE_OUTPUT_PATH}/zcgzip)
-    # add_test(zcgunzip ${EXECUTABLE_OUTPUT_PATH}/zcgunzip)
-  endif ()
-
-  # Copy these dest files to position - the test requires them
-  foreach(EXTRA_DIST_I
-    ${PROTOC_INPUTS}
-    google/protobuf/descriptor
-    google/protobuf/compiler/plugin)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${EXTRA_DIST_I}.proto
-                   ${CMAKE_BINARY_DIR}/src/${EXTRA_DIST_I}.proto
-                   COPYONLY)
-  endforeach(EXTRA_DIST_I)
-  foreach(EXTRA_DIST_I
-    google/protobuf/descriptor.pb.h
-    google/protobuf/descriptor.pb.cc
-    google/protobuf/compiler/plugin.pb.h
-    google/protobuf/compiler/plugin.pb.cc
-    solaris/libstdc++.la
-    google/protobuf/io/gzip_stream.h
-    google/protobuf/io/gzip_stream_unittest.sh
-    google/protobuf/testdata/golden_message
-    google/protobuf/testdata/golden_packed_fields_message
-    google/protobuf/testdata/text_format_unittest_data.txt
-    google/protobuf/testdata/text_format_unittest_extensions_data.txt
-    google/protobuf/package_info.h
-    google/protobuf/io/package_info.h
-    google/protobuf/compiler/package_info.h
-    google/protobuf/compiler/zip_output_unittest.sh
-    google/protobuf/unittest_enormous_descriptor.proto)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${EXTRA_DIST_I}
-                   ${CMAKE_BINARY_DIR}/src/${EXTRA_DIST_I}
-                   COPYONLY)
-  endforeach(EXTRA_DIST_I)
-endif() # End of tests (only compiled when requested now.
 
 IF(NOT CMAKE_CROSSCOMPILING)
   export(TARGETS protobuf protobuf-lite protoc_compiler

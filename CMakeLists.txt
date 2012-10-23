@@ -64,8 +64,6 @@ if (NOT DEFINED PROTOBUF_EXPORTS_FILE)
   file(REMOVE "${PROTOBUF_EXPORTS_FILE}")
 endif()
 
-option(protobuf_ENABLE_TESTING "Enable and build protobuf tests" OFF)
-
 INCLUDE (CheckFunctionExists)
 INCLUDE (CheckIncludeFile)
 INCLUDE (CheckIncludeFileCXX)
@@ -88,13 +86,6 @@ if (ZLIB_FOUND)
  set(HAVE_ZLIB 1)
  set(ZLIB_LINK_LIB ${ZLIB_LIBRARIES})
 endif (ZLIB_FOUND)
-
-if(protobuf_ENABLE_TESTING)
-  enable_testing()
-  # A test framework used internally by protobuf
-  # protobuf test cases use this
-  add_subdirectory(gtest)
-endif()
 
 # Source code for protobuf and its test cases
 add_subdirectory(src)
