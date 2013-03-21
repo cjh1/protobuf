@@ -136,10 +136,6 @@ if (HAVE_STDLIB_H AND HAVE_STDDEF_H)
 endif ()
 
 # Config config.h.cmake.in
-if (CMAKE_CROSSCOMPILING)
-  #Don't refuse to compile the runtime just because threads are missing
-  set(HAVE_PTHREAD 1)
-endif (CMAKE_CROSSCOMPILING)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake.in
                ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 

@@ -45,7 +45,8 @@
 #elif defined(HAVE_PTHREAD)
 #include <pthread.h>
 #else
-#error "No suitable threading library available."
+// ParaView support protobuf without threading.
+// #error "No suitable threading library available."
 #endif
 
 namespace google {
@@ -311,6 +312,28 @@ void Mutex::Unlock() {
 void Mutex::AssertHeld() {
   // pthreads dosn't provide a way to check which thread holds the mutex.
   // TODO(kenton):  Maybe keep track of locking thread ID like with WIN32?
+}
+
+#else
+
+struct Mutex::Internal {
+};
+
+Mutex::Mutex()
+  : mInternal(new Internal) {
+}
+
+Mutex::~Mutex() {
+  delete mInternal;
+}
+
+void Mutex::Lock() {
+}
+
+void Mutex::Unlock() {
+}
+
+void Mutex::AssertHeld() {
 }
 
 #endif
