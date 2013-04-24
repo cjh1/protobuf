@@ -40,90 +40,119 @@ CHECK_INCLUDE_FILE("unistd.h"    HAVE_UNISTD_H)
 # hash_map/hash_set namespace name and
 # hash_map/hash_set class name
 # Break on first successful compile and record names
-set(NAMESPACE "")
-set(LOCATION_MAP "")
-set(CLASSNAME_MAP "")
-set(LOCATION_SET "")
-set(CLASSNAME_SET "")
-foreach(NAMESPACE_I std std::tr1 stdext __gnu_cxx "")
- # Try hash_map
- foreach(LOCATION_MAP_I hash_map tr1/unordered_map ext/hash_map)
-  foreach(CLASSNAME_MAP_I unordered_map hash_map)
-   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/CMake/hash_map_test.cc.in
-                  ${CMAKE_CURRENT_BINARY_DIR}/CMake/hash_map_test.cc
-                  @ONLY)
-   try_compile(SUCCEED_MAP
-               ${CMAKE_CURRENT_BINARY_DIR}/CMake
-               ${CMAKE_CURRENT_BINARY_DIR}/CMake/hash_map_test.cc)
-   if (SUCCEED_MAP)
-    set(CLASSNAME_MAP "${CLASSNAME_MAP_I}")
-    break()
-   endif()
-  endforeach(CLASSNAME_MAP_I)
-  if (SUCCEED_MAP)
-   set(LOCATION_MAP "${LOCATION_MAP_I}")
-   break()
+function(determine_hash_namespace)
+  if (DEFINED protobut_determine_hash_namespace_done)
+    # BUG #14031: don't redo these tests each time.
+    return()
   endif()
- endforeach(LOCATION_MAP_I)
+  # set this internal variable so we don't waste time doing try compiles each
+  # time.
+  set (protobut_determine_hash_namespace_done TRUE CACHE INTERNAL "")
 
- # Try hash_set
- foreach(LOCATION_SET_I hash_set tr1/unordered_set ext/hash_set)
-  foreach(CLASSNAME_SET_I unordered_set hash_set)
-   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/CMake/hash_set_test.cc.in
-                  ${CMAKE_CURRENT_BINARY_DIR}/CMake/hash_set_test.cc
-                  @ONLY)
-   try_compile(SUCCEED_SET
-               ${CMAKE_CURRENT_BINARY_DIR}/CMake
-               ${CMAKE_CURRENT_BINARY_DIR}/CMake/hash_set_test.cc)
-   if (SUCCEED_SET)
-    set(CLASSNAME_SET "${CLASSNAME_SET_I}")
+  message(STATUS "Protobuf: doing try-compiles for hash map/set headers")
+  set(NAMESPACE "")
+  set(LOCATION_MAP "")
+  set(CLASSNAME_MAP "")
+  set(LOCATION_SET "")
+  set(CLASSNAME_SET "")
+  foreach(NAMESPACE_I std std::tr1 stdext __gnu_cxx "")
+   # Try hash_map
+   foreach(LOCATION_MAP_I hash_map tr1/unordered_map ext/hash_map)
+    foreach(CLASSNAME_MAP_I unordered_map hash_map)
+     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/CMake/hash_map_test.cc.in
+                    ${CMAKE_CURRENT_BINARY_DIR}/CMake/hash_map_test.cc
+                    @ONLY)
+     try_compile(SUCCEED_MAP
+                 ${CMAKE_CURRENT_BINARY_DIR}/CMake
+                 ${CMAKE_CURRENT_BINARY_DIR}/CMake/hash_map_test.cc)
+     if (SUCCEED_MAP)
+      set(CLASSNAME_MAP "${CLASSNAME_MAP_I}")
+      break()
+     endif()
+    endforeach(CLASSNAME_MAP_I)
+    if (SUCCEED_MAP)
+     set(LOCATION_MAP "${LOCATION_MAP_I}")
+     break()
+    endif()
+   endforeach(LOCATION_MAP_I)
+
+   # Try hash_set
+   foreach(LOCATION_SET_I hash_set tr1/unordered_set ext/hash_set)
+    foreach(CLASSNAME_SET_I unordered_set hash_set)
+     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/CMake/hash_set_test.cc.in
+                    ${CMAKE_CURRENT_BINARY_DIR}/CMake/hash_set_test.cc
+                    @ONLY)
+     try_compile(SUCCEED_SET
+                 ${CMAKE_CURRENT_BINARY_DIR}/CMake
+                 ${CMAKE_CURRENT_BINARY_DIR}/CMake/hash_set_test.cc)
+     if (SUCCEED_SET)
+      set(CLASSNAME_SET "${CLASSNAME_SET_I}")
+      break()
+     endif()
+    endforeach(CLASSNAME_SET_I)
+    if (SUCCEED_SET)
+     set(LOCATION_SET "${LOCATION_SET_I}")
+     break()
+    endif()
+   endforeach(LOCATION_SET_I)
+
+   # See if we found a successful compile for both hash_map and hash_set
+   if (SUCCEED_MAP AND SUCCEED_SET)
+    # Namespace of hash_map/hash_set
+    set(HASH_NAMESPACE "${NAMESPACE_I}" CACHE INTERNAL "")
+    # Define if the compiler has hash_map
+    set(HAVE_HASH_MAP 1 CACHE INTERNAL "")
+    # Location of <hash_map> file
+    set(HASH_MAP_H "${LOCATION_MAP}" CACHE INTERNAL "")
+    # Class name of the <hash_map>
+    set(HASH_MAP_CLASS "${CLASSNAME_MAP}" CACHE INTERNAL "")
+    # Define if the compiler has hash_set
+    set(HAVE_HASH_SET 1 CACHE INTERNAL "")
+    # Location of <hash_set> file
+    set(HASH_SET_H "${LOCATION_SET}" CACHE INTERNAL "")
+    # Class name of <hash_set>
+    set(HASH_SET_CLASS "${CLASSNAME_SET}" CACHE INTERNAL "")
     break()
-   endif()
-  endforeach(CLASSNAME_SET_I)
-  if (SUCCEED_SET)
-   set(LOCATION_SET "${LOCATION_SET_I}")
-   break()
-  endif()
- endforeach(LOCATION_SET_I)
+   endif ()
+  endforeach(NAMESPACE_I)
+endfunction()
 
- # See if we found a successful compile for both hash_map and hash_set
- if (SUCCEED_MAP AND SUCCEED_SET)
-  # Namespace of hash_map/hash_set
-  set(HASH_NAMESPACE "${NAMESPACE_I}")
-  # Define if the compiler has hash_map
-  set(HAVE_HASH_MAP 1)
-  # Location of <hash_map> file
-  set(HASH_MAP_H "${LOCATION_MAP}")
-  # Class name of the <hash_map>
-  set(HASH_MAP_CLASS "${CLASSNAME_MAP}")
-  # Define if the compiler has hash_set
-  set(HAVE_HASH_SET 1)
-  # Location of <hash_set> file
-  set(HASH_SET_H "${LOCATION_SET}")
-  # Class name of <hash_set>
-  set(HASH_SET_CLASS "${CLASSNAME_SET}")
-  break()
- endif ()
-endforeach(NAMESPACE_I)
+determine_hash_namespace()
 
 # Define to the sub-directory in which libtool stores uninstalled libraries
 # LT_OBJDIR
 
 # Define to necessary symbol if this constant
 # uses a non-standard name on your system
+function(pthread_test var)
+  if (DEFINED protobut_pthread_test_done)
+    set (${var} "${pthread_test_result}" PARENT_SCOPE)
+    return()
+  endif()
+  set (protobut_pthread_test_done TRUE CACHE INTERNAL "")
+
+  message(STATUS "Protobuf: doing try-compiles for pthread test")
+
+  set (_result "UNKNOWN")
+  foreach(PTHREAD_TEST PTHREAD_CREATE_JOINABLE PTHREAD_CREATE_UNDETACHED)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/CMake/pthread_test.cc.in
+                   ${CMAKE_CURRENT_BINARY_DIR}/CMake/pthread_test.cc
+                   @ONLY)
+    try_compile(SUCCEED
+                ${CMAKE_CURRENT_BINARY_DIR}/CMake
+                ${CMAKE_CURRENT_BINARY_DIR}/CMake/pthread_test.cc)
+    if (SUCCEED)
+      set(_result "${PTHREAD_TEST}")
+      break()
+    endif ()
+  endforeach(PTHREAD_TEST)
+
+  set (pthread_test_result "${_result}" CACHE INTERNAL "")
+  set (${var} "${pthread_test_result}" PARENT_SCOPE)
+endfunction()
+
 set(ATTR_NAME "UNKNOWN")
-foreach(PTHREAD_TEST PTHREAD_CREATE_JOINABLE PTHREAD_CREATE_UNDETACHED)
- configure_file(${CMAKE_CURRENT_SOURCE_DIR}/CMake/pthread_test.cc.in
-                ${CMAKE_CURRENT_BINARY_DIR}/CMake/pthread_test.cc
-                @ONLY)
- try_compile(SUCCEED
-             ${CMAKE_CURRENT_BINARY_DIR}/CMake
-             ${CMAKE_CURRENT_BINARY_DIR}/CMake/pthread_test.cc)
- if (SUCCEED)
-  set(ATTR_NAME "${PTHREAD_TEST}")
-  break()
- endif ()
-endforeach(PTHREAD_TEST)
+pthread_test(ATTR_NAME)
 
 if ("${ATTR_NAME}" STREQUAL "${PTHREAD_CREATE_JOINABLE}")
  set(PTHREAD_CREATE_JOINABLE "${ATTR_NAME}")
