@@ -197,6 +197,8 @@ set(LIBPROTOBUF_SOURCES
  google/protobuf/stubs/strutil.cc
  google/protobuf/stubs/substitute.cc
  google/protobuf/stubs/structurally_valid.cc
+ google/protobuf/stubs/atomicops_internals_x86_gcc.cc
+ google/protobuf/stubs/stringprintf.cc
  google/protobuf/descriptor.cc
  google/protobuf/descriptor.pb.cc
  google/protobuf/descriptor_database.cc
@@ -213,7 +215,9 @@ set(LIBPROTOBUF_SOURCES
  google/protobuf/io/tokenizer.cc
  google/protobuf/io/zero_copy_stream_impl.cc
  google/protobuf/compiler/importer.cc
- google/protobuf/compiler/parser.cc)
+ google/protobuf/compiler/parser.cc
+
+)
 if (ZLIB_FOUND)
   # Keeping the ZLIB dependent source file separate makes it possible to build
   # protoc executable without any zlib dependecies. Any extra depedencies on
@@ -271,7 +275,20 @@ set(LIBPROTOC_SOURCES
  google/protobuf/compiler/plugin.pb.cc
  google/protobuf/compiler/subprocess.cc
  google/protobuf/compiler/zip_writer.cc
- )
+ google/protobuf/compiler/java/java_doc_comment.cc
+ google/protobuf/compiler/java/java_enum.cc
+ google/protobuf/compiler/java/java_enum_field.cc
+ google/protobuf/compiler/java/java_extension.cc
+ google/protobuf/compiler/java/java_field.cc
+ google/protobuf/compiler/java/java_file.cc
+ google/protobuf/compiler/java/java_generator.cc
+ google/protobuf/compiler/java/java_helpers.cc
+ google/protobuf/compiler/java/java_message.cc
+ google/protobuf/compiler/java/java_message_field.cc
+ google/protobuf/compiler/java/java_primitive_field.cc
+ google/protobuf/compiler/java/java_service.cc
+ google/protobuf/compiler/java/java_string_field.cc
+ google/protobuf/compiler/python/python_generator.cc)
 link_directories(${LIBRARY_OUTPUT_PATH})
 # Removing protoc lib since it's causing build issues with Ninja generator on
 # Windows. protoc_compiler doesn't depend on protoc lib anyways. That dependency
