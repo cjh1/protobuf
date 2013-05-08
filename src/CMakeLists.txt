@@ -164,14 +164,16 @@ if (HAVE_STDLIB_H AND HAVE_STDDEF_H)
  set(STDC_HEADERS 1)
 endif ()
 
+# Include directories for this project
+if (ZLIB_FOUND)
+  include_directories(${ZLIB_INCLUDE_DIRS})
+  set(HAVE_ZLIB)
+endif ()
+
 # Config config.h.cmake.in
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake.in
                ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
-# Include directories for this project
-if (ZLIB_FOUND)
-  include_directories(${ZLIB_INCLUDE_DIRS})
-endif ()
 include_directories(
  ${CMAKE_CURRENT_BINARY_DIR}
  ${CMAKE_CURRENT_SOURCE_DIR}
