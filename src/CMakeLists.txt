@@ -1,10 +1,10 @@
 set(PACKAGE           "protobuf")
-set(VERSION           "2.3.0")
+set(VERSION           "2.5.0")
 set(PACKAGE_BUGREPORT "protobuf@googlegroups.com")
 set(PACKAGE_NAME      "Protocal Buffers")
 set(PACKAGE_TARNAME   "protobuf")
-set(PACKAGE_VERSION   "2.3.0")
-set(PACKAGE_STRING    "Protocal Buffers 2.3.0")
+set(PACKAGE_VERSION   "2.5.0")
+set(PACKAGE_STRING    "Protocal Buffers 2.5.0")
 
 #------------------------------------------------------------------------------
 # Setup RPATH settings to ensure that the protoc exetuble can be run correctly
