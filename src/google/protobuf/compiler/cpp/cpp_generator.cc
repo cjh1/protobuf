@@ -53,7 +53,7 @@ CppGenerator::~CppGenerator() {}
 
 bool CppGenerator::Generate(const FileDescriptor* file,
                             const string& parameter,
-                            OutputDirectory* output_directory,
+                            GeneratorContext* generator_context,
                             string* error) const {
   vector<pair<string, string> > options;
   ParseGeneratorParameter(parameter, &options);
@@ -78,11 +78,13 @@ bool CppGenerator::Generate(const FileDescriptor* file,
   //   }
   // FOO_EXPORT is a macro which should expand to __declspec(dllexport) or
   // __declspec(dllimport) depending on what is being compiled.
-  string dllexport_decl;
+  Options file_options;
 
   for (int i = 0; i < options.size(); i++) {
     if (options[i].first == "dllexport_decl") {
-      dllexport_decl = options[i].second;
+      file_options.dllexport_decl = options[i].second;
+    } else if (options[i].first == "safe_boundary_check") {
+      file_options.safe_boundary_check = true;
     } else {
       *error = "Unknown generator option: " + options[i].first;
       return false;
@@ -95,12 +97,12 @@ bool CppGenerator::Generate(const FileDescriptor* file,
   string basename = StripProto(file->name());
   basename.append(".pb");
 
-  FileGenerator file_generator(file, dllexport_decl);
+  FileGenerator file_generator(file, file_options);
 
   // Generate header.
   {
     scoped_ptr<io::ZeroCopyOutputStream> output(
-      output_directory->Open(basename + ".h"));
+      generator_context->Open(basename + ".h"));
     io::Printer printer(output.get(), '$');
     file_generator.GenerateHeader(&printer);
   }
@@ -108,7 +110,7 @@ bool CppGenerator::Generate(const FileDescriptor* file,
   // Generate cc file.
   {
     scoped_ptr<io::ZeroCopyOutputStream> output(
-      output_directory->Open(basename + ".cc"));
+      generator_context->Open(basename + ".cc"));
     io::Printer printer(output.get(), '$');
     file_generator.GenerateSource(&printer);
   }

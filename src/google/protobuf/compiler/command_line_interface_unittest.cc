@@ -48,6 +48,7 @@
 #include <google/protobuf/compiler/command_line_interface.h>
 #include <google/protobuf/compiler/code_generator.h>
 #include <google/protobuf/compiler/mock_code_generator.h>
+#include <google/protobuf/compiler/subprocess.h>
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/unittest.pb.h>
 #include <google/protobuf/testing/file.h>
@@ -121,6 +122,10 @@ class CommandLineInterfaceTest : public testing::Test {
   // substring.
   void ExpectErrorSubstring(const string& expected_substring);
 
+  // Like ExpectErrorSubstring, but checks that Run() returned zero.
+  void ExpectErrorSubstringWithZeroReturnCode(
+      const string& expected_substring);
+
   // Returns true if ExpectErrorSubstring(expected_substring) would pass, but
   // does not fail otherwise.
   bool HasAlternateErrorSubstring(const string& expected_substring);
@@ -143,6 +148,10 @@ class CommandLineInterfaceTest : public testing::Test {
                        const string& proto_name,
                        const string& message_name,
                        const string& output_directory);
+  void ExpectGeneratedWithMultipleInputs(const string& generator_name,
+                                         const string& all_proto_names,
+                                         const string& proto_name,
+                                         const string& message_name);
   void ExpectGeneratedWithInsertions(const string& generator_name,
                                      const string& parameter,
                                      const string& insertions,
@@ -190,7 +199,7 @@ class CommandLineInterfaceTest::NullCodeGenerator : public CodeGenerator {
   // implements CodeGenerator ----------------------------------------
   bool Generate(const FileDescriptor* file,
                 const string& parameter,
-                OutputDirectory* output_directory,
+                GeneratorContext* context,
                 string* error) const {
     called_ = true;
     parameter_ = parameter;
@@ -220,7 +229,7 @@ void CommandLineInterfaceTest::SetUp() {
   // Register generators.
   CodeGenerator* generator = new MockCodeGenerator("test_generator");
   mock_generators_to_delete_.push_back(generator);
-  cli_.RegisterGenerator("--test_out", generator, "Test output.");
+  cli_.RegisterGenerator("--test_out", "--test_opt", generator, "Test output.");
   cli_.RegisterGenerator("-t", generator, "Test output.");
 
   generator = new MockCodeGenerator("alt_generator");
@@ -251,7 +260,6 @@ void CommandLineInterfaceTest::Run(const string& command) {
 
   if (!disallow_plugins_) {
     cli_.AllowPlugins("prefix-");
-
     const char* possible_paths[] = {
       // When building with shared libraries, libtool hides the real executable
       // in .libs and puts a fake wrapper in the current directory.
@@ -341,6 +349,12 @@ void CommandLineInterfaceTest::ExpectErrorSubstring(
   EXPECT_PRED_FORMAT2(testing::IsSubstring, expected_substring, error_text_);
 }
 
+void CommandLineInterfaceTest::ExpectErrorSubstringWithZeroReturnCode(
+    const string& expected_substring) {
+  EXPECT_EQ(0, return_code_);
+  EXPECT_PRED_FORMAT2(testing::IsSubstring, expected_substring, error_text_);
+}
+
 bool CommandLineInterfaceTest::HasAlternateErrorSubstring(
     const string& expected_substring) {
   EXPECT_NE(0, return_code_);
@@ -353,7 +367,8 @@ void CommandLineInterfaceTest::ExpectGenerated(
     const string& proto_name,
     const string& message_name) {
   MockCodeGenerator::ExpectGenerated(
-      generator_name, parameter, "", proto_name, message_name, temp_directory_);
+      generator_name, parameter, "", proto_name, message_name, proto_name,
+      temp_directory_);
 }
 
 void CommandLineInterfaceTest::ExpectGenerated(
@@ -363,8 +378,19 @@ void CommandLineInterfaceTest::ExpectGenerated(
     const string& message_name,
     const string& output_directory) {
   MockCodeGenerator::ExpectGenerated(
-      generator_name, parameter, "", proto_name, message_name,
+      generator_name, parameter, "", proto_name, message_name, proto_name,
       temp_directory_ + "/" + output_directory);
+}
+
+void CommandLineInterfaceTest::ExpectGeneratedWithMultipleInputs(
+    const string& generator_name,
+    const string& all_proto_names,
+    const string& proto_name,
+    const string& message_name) {
+  MockCodeGenerator::ExpectGenerated(
+      generator_name, "", "", proto_name, message_name,
+      all_proto_names,
+      temp_directory_);
 }
 
 void CommandLineInterfaceTest::ExpectGeneratedWithInsertions(
@@ -375,7 +401,7 @@ void CommandLineInterfaceTest::ExpectGeneratedWithInsertions(
     const string& message_name) {
   MockCodeGenerator::ExpectGenerated(
       generator_name, parameter, insertions, proto_name, message_name,
-      temp_directory_);
+      proto_name, temp_directory_);
 }
 
 void CommandLineInterfaceTest::ExpectNullCodeGeneratorCalled(
@@ -455,8 +481,44 @@ TEST_F(CommandLineInterfaceTest, MultipleInputs) {
       "--proto_path=$tmpdir foo.proto bar.proto");
 
   ExpectNoErrors();
-  ExpectGenerated("test_generator", "", "foo.proto", "Foo");
-  ExpectGenerated("test_generator", "", "bar.proto", "Bar");
+  ExpectGeneratedWithMultipleInputs("test_generator", "foo.proto,bar.proto",
+                                    "foo.proto", "Foo");
+  ExpectGeneratedWithMultipleInputs("test_generator", "foo.proto,bar.proto",
+                                    "bar.proto", "Bar");
+  ExpectGeneratedWithMultipleInputs("test_plugin", "foo.proto,bar.proto",
+                                    "foo.proto", "Foo");
+  ExpectGeneratedWithMultipleInputs("test_plugin", "foo.proto,bar.proto",
+                                    "bar.proto", "Bar");
+}
+
+TEST_F(CommandLineInterfaceTest, MultipleInputsWithImport) {
+  // Test parsing multiple input files with an import of a separate file.
+
+  CreateTempFile("foo.proto",
+    "syntax = \"proto2\";\n"
+    "message Foo {}\n");
+  CreateTempFile("bar.proto",
+    "syntax = \"proto2\";\n"
+    "import \"baz.proto\";\n"
+    "message Bar {\n"
+    "  optional Baz a = 1;\n"
+    "}\n");
+  CreateTempFile("baz.proto",
+    "syntax = \"proto2\";\n"
+    "message Baz {}\n");
+
+  Run("protocol_compiler --test_out=$tmpdir --plug_out=$tmpdir "
+      "--proto_path=$tmpdir foo.proto bar.proto");
+
+  ExpectNoErrors();
+  ExpectGeneratedWithMultipleInputs("test_generator", "foo.proto,bar.proto",
+                                    "foo.proto", "Foo");
+  ExpectGeneratedWithMultipleInputs("test_generator", "foo.proto,bar.proto",
+                                    "bar.proto", "Bar");
+  ExpectGeneratedWithMultipleInputs("test_plugin", "foo.proto,bar.proto",
+                                    "foo.proto", "Foo");
+  ExpectGeneratedWithMultipleInputs("test_plugin", "foo.proto,bar.proto",
+                                    "bar.proto", "Bar");
 }
 
 TEST_F(CommandLineInterfaceTest, CreateDirectory) {
@@ -492,6 +554,32 @@ TEST_F(CommandLineInterfaceTest, GeneratorParameters) {
   ExpectGenerated("test_plugin", "TestPluginParameter", "foo.proto", "Foo");
 }
 
+TEST_F(CommandLineInterfaceTest, ExtraGeneratorParameters) {
+  // Test that generator parameters specified with the option flag are
+  // correctly passed to the code generator.
+
+  CreateTempFile("foo.proto",
+    "syntax = \"proto2\";\n"
+    "message Foo {}\n");
+  // Create the "a" and "b" sub-directories.
+  CreateTempDir("a");
+  CreateTempDir("b");
+
+  Run("protocol_compiler "
+      "--test_opt=foo1 "
+      "--test_out=bar:$tmpdir/a "
+      "--test_opt=foo2 "
+      "--test_out=baz:$tmpdir/b "
+      "--test_opt=foo3 "
+      "--proto_path=$tmpdir foo.proto");
+
+  ExpectNoErrors();
+  ExpectGenerated(
+      "test_generator", "bar,foo1,foo2,foo3", "foo.proto", "Foo", "a");
+  ExpectGenerated(
+      "test_generator", "baz,foo1,foo2,foo3", "foo.proto", "Foo", "b");
+}
+
 TEST_F(CommandLineInterfaceTest, Insert) {
   // Test running a generator that inserts code into another's output.
 
@@ -515,7 +603,7 @@ TEST_F(CommandLineInterfaceTest, Insert) {
       "foo.proto", "Foo");
 }
 
-#if defined(_WIN32) || defined(__CYGWIN__)
+#if defined(_WIN32)
 
 TEST_F(CommandLineInterfaceTest, WindowsOutputPath) {
   // Test that the output path can be a Windows-style path.
@@ -727,6 +815,33 @@ TEST_F(CommandLineInterfaceTest, WriteDescriptorSet) {
   if (HasFatalFailure()) return;
   ASSERT_EQ(1, descriptor_set.file_size());
   EXPECT_EQ("bar.proto", descriptor_set.file(0).name());
+  // Descriptor set should not have source code info.
+  EXPECT_FALSE(descriptor_set.file(0).has_source_code_info());
+}
+
+TEST_F(CommandLineInterfaceTest, WriteDescriptorSetWithSourceInfo) {
+  CreateTempFile("foo.proto",
+    "syntax = \"proto2\";\n"
+    "message Foo {}\n");
+  CreateTempFile("bar.proto",
+    "syntax = \"proto2\";\n"
+    "import \"foo.proto\";\n"
+    "message Bar {\n"
+    "  optional Foo foo = 1;\n"
+    "}\n");
+
+  Run("protocol_compiler --descriptor_set_out=$tmpdir/descriptor_set "
+      "--include_source_info --proto_path=$tmpdir bar.proto");
+
+  ExpectNoErrors();
+
+  FileDescriptorSet descriptor_set;
+  ReadDescriptorSet("descriptor_set", &descriptor_set);
+  if (HasFatalFailure()) return;
+  ASSERT_EQ(1, descriptor_set.file_size());
+  EXPECT_EQ("bar.proto", descriptor_set.file(0).name());
+  // Source code info included.
+  EXPECT_TRUE(descriptor_set.file(0).has_source_code_info());
 }
 
 TEST_F(CommandLineInterfaceTest, WriteTransitiveDescriptorSet) {
@@ -755,6 +870,40 @@ TEST_F(CommandLineInterfaceTest, WriteTransitiveDescriptorSet) {
   }
   EXPECT_EQ("foo.proto", descriptor_set.file(0).name());
   EXPECT_EQ("bar.proto", descriptor_set.file(1).name());
+  // Descriptor set should not have source code info.
+  EXPECT_FALSE(descriptor_set.file(0).has_source_code_info());
+  EXPECT_FALSE(descriptor_set.file(1).has_source_code_info());
+}
+
+TEST_F(CommandLineInterfaceTest, WriteTransitiveDescriptorSetWithSourceInfo) {
+  CreateTempFile("foo.proto",
+    "syntax = \"proto2\";\n"
+    "message Foo {}\n");
+  CreateTempFile("bar.proto",
+    "syntax = \"proto2\";\n"
+    "import \"foo.proto\";\n"
+    "message Bar {\n"
+    "  optional Foo foo = 1;\n"
+    "}\n");
+
+  Run("protocol_compiler --descriptor_set_out=$tmpdir/descriptor_set "
+      "--include_imports --include_source_info --proto_path=$tmpdir bar.proto");
+
+  ExpectNoErrors();
+
+  FileDescriptorSet descriptor_set;
+  ReadDescriptorSet("descriptor_set", &descriptor_set);
+  if (HasFatalFailure()) return;
+  ASSERT_EQ(2, descriptor_set.file_size());
+  if (descriptor_set.file(0).name() == "bar.proto") {
+    std::swap(descriptor_set.mutable_file()->mutable_data()[0],
+              descriptor_set.mutable_file()->mutable_data()[1]);
+  }
+  EXPECT_EQ("foo.proto", descriptor_set.file(0).name());
+  EXPECT_EQ("bar.proto", descriptor_set.file(1).name());
+  // Source code info included.
+  EXPECT_TRUE(descriptor_set.file(0).has_source_code_info());
+  EXPECT_TRUE(descriptor_set.file(1).has_source_code_info());
 }
 
 // -------------------------------------------------------------------
@@ -1077,6 +1226,17 @@ TEST_F(CommandLineInterfaceTest, GeneratorPluginCrash) {
 #endif
 }
 
+TEST_F(CommandLineInterfaceTest, PluginReceivesSourceCodeInfo) {
+  CreateTempFile("foo.proto",
+    "syntax = \"proto2\";\n"
+    "message MockCodeGenerator_HasSourceCodeInfo {}\n");
+
+  Run("protocol_compiler --plug_out=$tmpdir --proto_path=$tmpdir foo.proto");
+
+  ExpectErrorSubstring(
+      "Saw message type MockCodeGenerator_HasSourceCodeInfo: 1.");
+}
+
 TEST_F(CommandLineInterfaceTest, GeneratorPluginNotFound) {
   // Test what happens if the plugin isn't found.
 
@@ -1089,9 +1249,8 @@ TEST_F(CommandLineInterfaceTest, GeneratorPluginNotFound) {
       "--proto_path=$tmpdir error.proto");
 
 #ifdef _WIN32
-  ExpectErrorSubstring(
-      "--badplug_out: prefix-gen-badplug: The system cannot find the file "
-        "specified.");
+  ExpectErrorSubstring("--badplug_out: prefix-gen-badplug: " +
+      Subprocess::Win32ErrorMessage(ERROR_FILE_NOT_FOUND));
 #else
   // Error written to stdout by child process after exec() fails.
   ExpectErrorSubstring(
@@ -1120,11 +1279,11 @@ TEST_F(CommandLineInterfaceTest, GeneratorPluginNotAllowed) {
 TEST_F(CommandLineInterfaceTest, HelpText) {
   Run("test_exec_name --help");
 
-  ExpectErrorSubstring("Usage: test_exec_name ");
-  ExpectErrorSubstring("--test_out=OUT_DIR");
-  ExpectErrorSubstring("Test output.");
-  ExpectErrorSubstring("--alt_out=OUT_DIR");
-  ExpectErrorSubstring("Alt output.");
+  ExpectErrorSubstringWithZeroReturnCode("Usage: test_exec_name ");
+  ExpectErrorSubstringWithZeroReturnCode("--test_out=OUT_DIR");
+  ExpectErrorSubstringWithZeroReturnCode("Test output.");
+  ExpectErrorSubstringWithZeroReturnCode("--alt_out=OUT_DIR");
+  ExpectErrorSubstringWithZeroReturnCode("Alt output.");
 }
 
 TEST_F(CommandLineInterfaceTest, GccFormatErrors) {
@@ -1153,7 +1312,7 @@ TEST_F(CommandLineInterfaceTest, MsvsFormatErrors) {
       "--proto_path=$tmpdir --error_format=msvs foo.proto");
 
   ExpectErrorText(
-    "foo.proto(2) : error in column=1: Expected top-level statement "
+    "$tmpdir/foo.proto(2) : error in column=1: Expected top-level statement "
       "(e.g. \"message\").\n");
 }
 

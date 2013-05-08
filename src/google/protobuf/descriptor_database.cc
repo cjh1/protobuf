@@ -39,7 +39,7 @@
 #include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/wire_format_lite_inl.h>
 #include <google/protobuf/stubs/strutil.h>
-#include <google/protobuf/stubs/stl_util-inl.h>
+#include <google/protobuf/stubs/stl_util.h>
 #include <google/protobuf/stubs/map-util.h>
 
 namespace google {
@@ -101,7 +101,7 @@ bool SimpleDescriptorDatabase::DescriptorIndex<Value>::AddSymbol(
 
   if (iter == by_symbol_.end()) {
     // Apparently the map is currently empty.  Just insert and be done with it.
-    by_symbol_.insert(make_pair(name, value));
+    by_symbol_.insert(typename map<string, Value>::value_type(name, value));
     return true;
   }
 
@@ -128,7 +128,7 @@ bool SimpleDescriptorDatabase::DescriptorIndex<Value>::AddSymbol(
 
   // Insert the new symbol using the iterator as a hint, the new entry will
   // appear immediately before the one the iterator is pointing at.
-  by_symbol_.insert(iter, make_pair(name, value));
+  by_symbol_.insert(iter, typename map<string, Value>::value_type(name, value));
 
   return true;
 }

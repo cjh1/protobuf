@@ -36,6 +36,10 @@
 // though the same identifiers are used internally by the C++ code generator.
 
 
+// Some generic_services option(s) added automatically.
+// See:  http://go/proto2-generic-services-default
+option cc_generic_services = true;     // auto-added
+
 // We don't put this in a package within proto2 because we need to make sure
 // that the generated code doesn't depend on being in the proto2 namespace.
 package protobuf_unittest;
@@ -99,7 +103,17 @@ message TestConflictingSymbolNames {
   message DO {}
   optional DO do = 32;
 
+  // Some template parameter names for extensions.
+  optional int32 field_type = 33;
+  optional bool is_packed = 34;
+
   extensions 1000 to max;
+}
+
+message TestConflictingSymbolNamesExtension {
+  extend TestConflictingSymbolNames {
+    repeated int32 repeated_int32_ext = 20423638 [packed=true];
+  }
 }
 
 message DummyMessage {}

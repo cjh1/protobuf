@@ -339,6 +339,21 @@ TEST_F(TextFormatTest, PrintMessageSingleLine) {
     text);
 }
 
+TEST_F(TextFormatTest, PrintBufferTooSmall) {
+  // Test printing a message to a buffer that is too small.
+
+  protobuf_unittest::TestAllTypes message;
+
+  message.add_repeated_string("abc");
+  message.add_repeated_string("def");
+
+  char buffer[1] = "";
+  io::ArrayOutputStream output_stream(buffer, 1);
+  EXPECT_FALSE(TextFormat::Print(message, &output_stream));
+  EXPECT_EQ(buffer[0], 'r');
+  EXPECT_EQ(output_stream.ByteCount(), 1);
+}
+
 TEST_F(TextFormatTest, ParseBasic) {
   io::ArrayInputStream input_stream(proto_debug_string_.data(),
                                     proto_debug_string_.size());
@@ -351,6 +366,25 @@ TEST_F(TextFormatExtensionsTest, ParseExtensions) {
                                     proto_debug_string_.size());
   TextFormat::Parse(&input_stream, &proto_);
   TestUtil::ExpectAllExtensionsSet(proto_);
+}
+
+TEST_F(TextFormatTest, ParseEnumFieldFromNumber) {
+  // Create a parse string with a numerical value for an enum field.
+  string parse_string = strings::Substitute("optional_nested_enum: $0",
+                                            unittest::TestAllTypes::BAZ);
+  EXPECT_TRUE(TextFormat::ParseFromString(parse_string, &proto_));
+  EXPECT_TRUE(proto_.has_optional_nested_enum());
+  EXPECT_EQ(unittest::TestAllTypes::BAZ, proto_.optional_nested_enum());
+}
+
+TEST_F(TextFormatTest, ParseEnumFieldFromNegativeNumber) {
+  ASSERT_LT(unittest::SPARSE_E, 0);
+  string parse_string = strings::Substitute("sparse_enum: $0",
+                                            unittest::SPARSE_E);
+  unittest::SparseEnumMessage proto;
+  EXPECT_TRUE(TextFormat::ParseFromString(parse_string, &proto));
+  EXPECT_TRUE(proto.has_sparse_enum());
+  EXPECT_EQ(unittest::SPARSE_E, proto.sparse_enum());
 }
 
 TEST_F(TextFormatTest, ParseStringEscape) {
@@ -404,6 +438,34 @@ TEST_F(TextFormatTest, ParseFloatWithSuffix) {
 
   // Compare.
   EXPECT_EQ(1.0, proto_.optional_float());
+}
+
+TEST_F(TextFormatTest, ParseShortRepeatedForm) {
+  string parse_string =
+      // Mixed short-form and long-form are simply concatenated.
+      "repeated_int32: 1\n"
+      "repeated_int32: [456, 789]\n"
+      "repeated_nested_enum: [  FOO ,BAR, # comment\n"
+      "                         3]\n"
+      // Note that while the printer won't print repeated strings in short-form,
+      // the parser will accept them.
+      "repeated_string: [ \"foo\", 'bar' ]\n";
+
+  ASSERT_TRUE(TextFormat::ParseFromString(parse_string, &proto_));
+
+  ASSERT_EQ(3, proto_.repeated_int32_size());
+  EXPECT_EQ(1, proto_.repeated_int32(0));
+  EXPECT_EQ(456, proto_.repeated_int32(1));
+  EXPECT_EQ(789, proto_.repeated_int32(2));
+
+  ASSERT_EQ(3, proto_.repeated_nested_enum_size());
+  EXPECT_EQ(unittest::TestAllTypes::FOO, proto_.repeated_nested_enum(0));
+  EXPECT_EQ(unittest::TestAllTypes::BAR, proto_.repeated_nested_enum(1));
+  EXPECT_EQ(unittest::TestAllTypes::BAZ, proto_.repeated_nested_enum(2));
+
+  ASSERT_EQ(2, proto_.repeated_string_size());
+  EXPECT_EQ("foo", proto_.repeated_string(0));
+  EXPECT_EQ("bar", proto_.repeated_string(1));
 }
 
 TEST_F(TextFormatTest, Comments) {
@@ -681,6 +743,25 @@ class TextFormatParserTest : public testing::Test {
               error_collector.text_);
   }
 
+  void ExpectSuccessAndTree(const string& input, Message* proto,
+                            TextFormat::ParseInfoTree* info_tree) {
+    TextFormat::Parser parser;
+    MockErrorCollector error_collector;
+    parser.RecordErrorsTo(&error_collector);
+    parser.WriteLocationsTo(info_tree);
+
+    EXPECT_TRUE(parser.ParseFromString(input, proto));
+  }
+
+  void ExpectLocation(TextFormat::ParseInfoTree* tree,
+                      const Descriptor* d, const string& field_name,
+                      int index, int line, int column) {
+    TextFormat::ParseLocation location = tree->GetLocation(
+        d->FindFieldByName(field_name), index);
+    EXPECT_EQ(line, location.line);
+    EXPECT_EQ(column, location.column);
+  }
+
   // An error collector which simply concatenates all its errors into a big
   // block of text which can be checked.
   class MockErrorCollector : public io::ErrorCollector {
@@ -702,6 +783,71 @@ class TextFormatParserTest : public testing::Test {
   };
 };
 
+TEST_F(TextFormatParserTest, ParseInfoTreeBuilding) {
+  scoped_ptr<unittest::TestAllTypes> message(new unittest::TestAllTypes);
+  const Descriptor* d = message->GetDescriptor();
+
+  string stringData =
+      "optional_int32: 1\n"
+      "optional_int64: 2\n"
+      "  optional_double: 2.4\n"
+      "repeated_int32: 5\n"
+      "repeated_int32: 10\n"
+      "optional_nested_message <\n"
+      "  bb: 78\n"
+      ">\n"
+      "repeated_nested_message <\n"
+      "  bb: 79\n"
+      ">\n"
+      "repeated_nested_message <\n"
+      "  bb: 80\n"
+      ">";
+
+
+  TextFormat::ParseInfoTree tree;
+  ExpectSuccessAndTree(stringData, message.get(), &tree);
+
+  // Verify that the tree has the correct positions.
+  ExpectLocation(&tree, d, "optional_int32", -1, 0, 0);
+  ExpectLocation(&tree, d, "optional_int64", -1, 1, 0);
+  ExpectLocation(&tree, d, "optional_double", -1, 2, 2);
+
+  ExpectLocation(&tree, d, "repeated_int32", 0, 3, 0);
+  ExpectLocation(&tree, d, "repeated_int32", 1, 4, 0);
+
+  ExpectLocation(&tree, d, "optional_nested_message", -1, 5, 0);
+  ExpectLocation(&tree, d, "repeated_nested_message", 0, 8, 0);
+  ExpectLocation(&tree, d, "repeated_nested_message", 1, 11, 0);
+
+  // Check for fields not set. For an invalid field, the location returned
+  // should be -1, -1.
+  ExpectLocation(&tree, d, "repeated_int64", 0, -1, -1);
+  ExpectLocation(&tree, d, "repeated_int32", 6, -1, -1);
+  ExpectLocation(&tree, d, "some_unknown_field", -1, -1, -1);
+
+  // Verify inside the nested message.
+  const FieldDescriptor* nested_field =
+      d->FindFieldByName("optional_nested_message");
+
+  TextFormat::ParseInfoTree* nested_tree =
+      tree.GetTreeForNested(nested_field, -1);
+  ExpectLocation(nested_tree, nested_field->message_type(), "bb", -1, 6, 2);
+
+  // Verify inside another nested message.
+  nested_field = d->FindFieldByName("repeated_nested_message");
+  nested_tree = tree.GetTreeForNested(nested_field, 0);
+  ExpectLocation(nested_tree, nested_field->message_type(), "bb", -1, 9, 2);
+
+  nested_tree = tree.GetTreeForNested(nested_field, 1);
+  ExpectLocation(nested_tree, nested_field->message_type(), "bb", -1, 12, 2);
+
+  // Verify a NULL tree for an unknown nested field.
+  TextFormat::ParseInfoTree* unknown_nested_tree =
+      tree.GetTreeForNested(nested_field, 2);
+
+  EXPECT_EQ(NULL, unknown_nested_tree);
+}
+
 TEST_F(TextFormatParserTest, ParseFieldValueFromString) {
   scoped_ptr<unittest::TestAllTypes> message(new unittest::TestAllTypes);
   const Descriptor* d = message->GetDescriptor();
@@ -710,6 +856,12 @@ TEST_F(TextFormatParserTest, ParseFieldValueFromString) {
   EXPECT_TRUE(TextFormat::ParseFieldValueFromString( \
     valuestring, d->FindFieldByName("optional_" #name), message.get())); \
   EXPECT_EQ(value, message->optional_##name()); \
+  EXPECT_TRUE(message->has_optional_##name());
+
+#define EXPECT_BOOL_FIELD(name, value, valuestring) \
+  EXPECT_TRUE(TextFormat::ParseFieldValueFromString( \
+    valuestring, d->FindFieldByName("optional_" #name), message.get())); \
+  EXPECT_TRUE(message->optional_##name() == value); \
   EXPECT_TRUE(message->has_optional_##name());
 
 #define EXPECT_FLOAT_FIELD(name, value, valuestring) \
@@ -769,9 +921,14 @@ TEST_F(TextFormatParserTest, ParseFieldValueFromString) {
   EXPECT_INVALID(fixed64, "1,2");
 
   // bool
-  EXPECT_FIELD(bool, true, "true");
-  EXPECT_FIELD(bool, false, "false");
-  EXPECT_INVALID(bool, "1");
+  EXPECT_BOOL_FIELD(bool, true, "true");
+  EXPECT_BOOL_FIELD(bool, false, "false");
+  EXPECT_BOOL_FIELD(bool, true, "1");
+  EXPECT_BOOL_FIELD(bool, true, "t");
+  EXPECT_BOOL_FIELD(bool, false, "0");
+  EXPECT_BOOL_FIELD(bool, false, "f");
+  EXPECT_INVALID(bool, "2");
+  EXPECT_INVALID(bool, "-0");
   EXPECT_INVALID(bool, "on");
   EXPECT_INVALID(bool, "a");
   EXPECT_INVALID(bool, "True");
@@ -799,7 +956,8 @@ TEST_F(TextFormatParserTest, ParseFieldValueFromString) {
 
   // enum
   EXPECT_FIELD(nested_enum, unittest::TestAllTypes::BAR, "BAR");
-  EXPECT_INVALID(nested_enum, "1");  // number not supported
+  EXPECT_FIELD(nested_enum, unittest::TestAllTypes::BAZ,
+               SimpleItoa(unittest::TestAllTypes::BAZ));
   EXPECT_INVALID(nested_enum, "FOOBAR");
 
   // message
@@ -810,6 +968,7 @@ TEST_F(TextFormatParserTest, ParseFieldValueFromString) {
   EXPECT_INVALID(nested_message, "any");
 
 #undef EXPECT_FIELD
+#undef EXPECT_BOOL_FIELD
 #undef EXPECT_FLOAT_FIELD
 #undef EXPECT_DOUBLE_FIELD
 #undef EXPECT_INVALID
@@ -820,7 +979,7 @@ TEST_F(TextFormatParserTest, InvalidToken) {
   ExpectFailure("optional_bool: true\n-5\n", "Expected identifier.",
                 2, 1);
 
-  ExpectFailure("optional_bool: true;\n", "Expected identifier.", 1, 20);
+  ExpectFailure("optional_bool: true!\n", "Expected identifier.", 1, 20);
   ExpectFailure("\"some string\"", "Expected identifier.", 1, 1);
 }
 
@@ -868,10 +1027,10 @@ TEST_F(TextFormatParserTest, InvalidFieldValues) {
                 1, 16);
   ExpectFailure("optional_int32: 0x80000000\n",
                 "Integer out of range.", 1, 17);
-  ExpectFailure("optional_int32: -0x80000001\n",
-                "Integer out of range.", 1, 18);
   ExpectFailure("optional_int64: 0x8000000000000000\n",
                 "Integer out of range.", 1, 17);
+  ExpectFailure("optional_int32: -0x80000001\n",
+                "Integer out of range.", 1, 18);
   ExpectFailure("optional_int64: -0x8000000000000001\n",
                 "Integer out of range.", 1, 18);
 
@@ -890,7 +1049,7 @@ TEST_F(TextFormatParserTest, InvalidFieldValues) {
 
   // Invalid values for a boolean field.
   ExpectFailure("optional_bool: \"hello\"\n", "Expected identifier.", 1, 16);
-  ExpectFailure("optional_bool: 5\n", "Expected identifier.", 1, 16);
+  ExpectFailure("optional_bool: 5\n", "Integer out of range.", 1, 16);
   ExpectFailure("optional_bool: -7.5\n", "Expected identifier.", 1, 16);
   ExpectFailure("optional_bool: !\n", "Expected identifier.", 1, 16);
 
@@ -911,12 +1070,18 @@ TEST_F(TextFormatParserTest, InvalidFieldValues) {
                 1, 17);
 
   // Invalid values for an enumeration field.
-  ExpectFailure("optional_nested_enum: \"hello\"\n", "Expected identifier.",
-                1, 23);
+  ExpectFailure("optional_nested_enum: \"hello\"\n",
+                "Expected integer or identifier.", 1, 23);
 
-  ExpectFailure("optional_nested_enum: 5\n", "Expected identifier.", 1, 23);
-  ExpectFailure("optional_nested_enum: -7.5\n", "Expected identifier.", 1, 23);
-  ExpectFailure("optional_nested_enum: !\n", "Expected identifier.", 1, 23);
+  // Valid token, but enum value is not defined.
+  ExpectFailure("optional_nested_enum: 5\n",
+                "Unknown enumeration value of \"5\" for field "
+                "\"optional_nested_enum\".", 2, 1);
+  // We consume the negative sign, so the error position starts one character
+  // later.
+  ExpectFailure("optional_nested_enum: -7.5\n", "Expected integer.", 1, 24);
+  ExpectFailure("optional_nested_enum: !\n",
+                "Expected integer or identifier.", 1, 23);
 
   ExpectFailure(
       "optional_nested_enum: grah\n",
@@ -984,6 +1149,14 @@ TEST_F(TextFormatParserTest, MergeDuplicateOptional) {
   TextFormat::Parser parser;
   EXPECT_TRUE(parser.MergeFromString("c: 1 c: 2", &message));
   EXPECT_EQ(2, message.c());
+}
+
+TEST_F(TextFormatParserTest, ExplicitDelimiters) {
+  unittest::TestRequired message;
+  EXPECT_TRUE(TextFormat::ParseFromString("a:1,b:2;c:3", &message));
+  EXPECT_EQ(1, message.a());
+  EXPECT_EQ(2, message.b());
+  EXPECT_EQ(3, message.c());
 }
 
 TEST_F(TextFormatParserTest, PrintErrorsToStderr) {
@@ -1068,6 +1241,7 @@ TEST_F(TextFormatMessageSetTest, Deserialize) {
     proto.message_set(), &descriptors);
   EXPECT_EQ(2, descriptors.size());
 }
+
 
 }  // namespace text_format_unittest
 }  // namespace protobuf
