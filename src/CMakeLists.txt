@@ -306,26 +306,30 @@ IF(NOT CMAKE_CROSSCOMPILING)
   # We build the protoc executable without any dependencies on libraries built
   # here viz. protobuf/protoc. This avoids unnecessary build-time
   # complications when using protoc to generate headers in projects.
+   add_library(protoc
+     ${LIBPROTOC_SOURCES})
+   target_link_libraries(protoc protobuf)
+
    add_executable(protoc_compiler
-      google/protobuf/compiler/main.cc
-      ${LIBPROTOC_SOURCES}
-      ${LIBPROTOBUF_SOURCES})
+      google/protobuf/compiler/main.cc)
+
    set_target_properties(protoc_compiler PROPERTIES
                          OUTPUT_NAME     protoc)
    target_link_libraries(protoc_compiler
+                         protoc
                          ${THREAD_LINK_LIB})
    get_target_property(protoc_compiler_location protoc_compiler LOCATION)
 ENDIF(NOT CMAKE_CROSSCOMPILING)
 
 IF(NOT CMAKE_CROSSCOMPILING)
-  export(TARGETS protobuf protobuf-lite protoc_compiler
+  export(TARGETS protobuf protobuf-lite protoc protoc_compiler
          APPEND FILE "${PROTOBUF_EXPORTS_FILE}")
 ELSE(NOT CMAKE_CROSSCOMPILING)
   export(TARGETS protobuf protobuf-lite
          APPEND FILE "${PROTOBUF_EXPORTS_FILE}")
 ENDIF(NOT CMAKE_CROSSCOMPILING)
 
-install (TARGETS protobuf protobuf-lite
+install (TARGETS protobuf protobuf-lite protoc
   EXPORT ${PROTOBUF_INSTALL_EXPORT_NAME}
   RUNTIME DESTINATION ${PROTOBUF_INSTALL_BIN_DIR} COMPONENT Runtime
   LIBRARY DESTINATION ${PROTOBUF_INSTALL_LIB_DIR} COMPONENT Runtime
