@@ -198,6 +198,7 @@ set(LIBPROTOBUF_SOURCES
  google/protobuf/stubs/substitute.cc
  google/protobuf/stubs/structurally_valid.cc
  google/protobuf/stubs/atomicops_internals_x86_gcc.cc
+ google/protobuf/stubs/atomicops_internals_x86_msvc.cc
  google/protobuf/stubs/stringprintf.cc
  google/protobuf/descriptor.cc
  google/protobuf/descriptor.pb.cc
@@ -215,9 +216,8 @@ set(LIBPROTOBUF_SOURCES
  google/protobuf/io/tokenizer.cc
  google/protobuf/io/zero_copy_stream_impl.cc
  google/protobuf/compiler/importer.cc
- google/protobuf/compiler/parser.cc
+ google/protobuf/compiler/parser.cc)
 
-)
 if (ZLIB_FOUND)
   # Keeping the ZLIB dependent source file separate makes it possible to build
   # protoc executable without any zlib dependecies. Any extra depedencies on
@@ -247,7 +247,9 @@ set(PROTOBUF_LITE_SOURCES
  google/protobuf/wire_format_lite.cc
  google/protobuf/io/coded_stream.cc
  google/protobuf/io/zero_copy_stream.cc
- google/protobuf/io/zero_copy_stream_impl_lite.cc)
+ google/protobuf/io/zero_copy_stream_impl_lite.cc
+ google/protobuf/stubs/atomicops_internals_x86_gcc.cc
+ google/protobuf/stubs/atomicops_internals_x86_msvc.cc)
 add_library(protobuf-lite ${PROTOBUF_LITE_SOURCES})
 if (WIN32 AND BUILD_SHARED_LIBS)
  set_target_properties(protobuf-lite PROPERTIES
@@ -289,6 +291,7 @@ set(LIBPROTOC_SOURCES
  google/protobuf/compiler/java/java_service.cc
  google/protobuf/compiler/java/java_string_field.cc
  google/protobuf/compiler/python/python_generator.cc)
+
 link_directories(${LIBRARY_OUTPUT_PATH})
 # Removing protoc lib since it's causing build issues with Ninja generator on
 # Windows. protoc_compiler doesn't depend on protoc lib anyways. That dependency
@@ -306,9 +309,9 @@ IF(NOT CMAKE_CROSSCOMPILING)
   # We build the protoc executable without any dependencies on libraries built
   # here viz. protobuf/protoc. This avoids unnecessary build-time
   # complications when using protoc to generate headers in projects.
-   add_library(protoc
+   add_library(protoc_lib
      ${LIBPROTOC_SOURCES})
-   target_link_libraries(protoc protobuf)
+   target_link_libraries(protoc_lib protobuf)
 
    add_executable(protoc_compiler
       google/protobuf/compiler/main.cc)
@@ -316,20 +319,24 @@ IF(NOT CMAKE_CROSSCOMPILING)
    set_target_properties(protoc_compiler PROPERTIES
                          OUTPUT_NAME     protoc)
    target_link_libraries(protoc_compiler
-                         protoc
+                         protoc_lib
                          ${THREAD_LINK_LIB})
    get_target_property(protoc_compiler_location protoc_compiler LOCATION)
+   if (WIN32 AND BUILD_SHARED_LIBS)
+     set_target_properties(protoc_lib PROPERTIES
+       COMPILE_DEFINITIONS "LIBPROTOC_EXPORTS;PROTOBUF_USE_DLLS")
+   endif()
 ENDIF(NOT CMAKE_CROSSCOMPILING)
 
 IF(NOT CMAKE_CROSSCOMPILING)
-  export(TARGETS protobuf protobuf-lite protoc protoc_compiler
+  export(TARGETS protobuf protobuf-lite protoc_lib protoc_compiler
          APPEND FILE "${PROTOBUF_EXPORTS_FILE}")
 ELSE(NOT CMAKE_CROSSCOMPILING)
   export(TARGETS protobuf protobuf-lite
          APPEND FILE "${PROTOBUF_EXPORTS_FILE}")
 ENDIF(NOT CMAKE_CROSSCOMPILING)
 
-install (TARGETS protobuf protobuf-lite protoc
+install (TARGETS protobuf protobuf-lite protoc_lib
   EXPORT ${PROTOBUF_INSTALL_EXPORT_NAME}
   RUNTIME DESTINATION ${PROTOBUF_INSTALL_BIN_DIR} COMPONENT Runtime
   LIBRARY DESTINATION ${PROTOBUF_INSTALL_LIB_DIR} COMPONENT Runtime
