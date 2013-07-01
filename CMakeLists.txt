@@ -93,3 +93,6 @@ add_subdirectory(src)
 # Create the configure file for protobuf
 configure_file("${PROTOBUF_SOURCE_DIR}/protobufConfig.cmake.in"
   "${PROTOBUF_BINARY_DIR}/protobufConfig.cmake" @ONLY)
+
+install(FILES "${PROTOBUF_BINARY_DIR}/protobufConfig.cmake"
+  DESTINATION lib/cmake/protobuf)
