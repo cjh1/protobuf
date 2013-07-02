@@ -1,18 +1,11 @@
 cmake_minimum_required(VERSION 2.6)
 project(protobuf)
 
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+include(InstallLocation)
+
 set (PROTOBUF_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set (PROTOBUF_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
-
-IF (NOT PROTOBUF_INSTALL_BIN_DIR)
-  SET (PROTOBUF_INSTALL_BIN_DIR bin)
-ENDIF()
-IF (NOT PROTOBUF_INSTALL_LIB_DIR)
-  SET (PROTOBUF_INSTALL_LIB_DIR lib)
-ENDIF()
-IF (NOT PROTOBUF_INSTALL_EXPORT_NAME)
-  SET (PROTOBUF_INSTALL_EXPORT_NAME ProtobufTargets)
-ENDIF()
 
 if (NOT WIN32)
   OPTION(BUILD_SHARED_LIBS "Build shared protobuf library" ON)
@@ -90,9 +83,17 @@ endif (ZLIB_FOUND)
 # Source code for protobuf and its test cases
 add_subdirectory(src)
 
+set(protobuf_TARGETS_DIR "${CMAKE_BINARY_DIR}")
+
 # Create the configure file for protobuf
 configure_file("${PROTOBUF_SOURCE_DIR}/protobufConfig.cmake.in"
   "${PROTOBUF_BINARY_DIR}/protobufConfig.cmake" @ONLY)
 
-install(FILES "${PROTOBUF_BINARY_DIR}/protobufConfig.cmake"
-  DESTINATION lib/cmake/protobuf)
+set(protobuf_TARGETS_DIR "${CMAKE_INSTALL_PREFIX}/${INSTALL_LIBRARY_DIR}/cmake/protobuf")
+
+# config for install tree
+configure_file(protobufConfig.cmake.in
+  ${CMAKE_BINARY_DIR}/CMakeFiles/protobufConfig.cmake @ONLY)
+
+install(FILES "${CMAKE_BINARY_DIR}/CMakeFiles/protobufConfig.cmake"
+  DESTINATION ${INSTALL_LIBRARY_DIR}/cmake/protobuf)

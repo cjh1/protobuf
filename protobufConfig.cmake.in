@@ -10,14 +10,15 @@
 # implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 # See the License for more information.
 #=============================================================================
-# protoc logic taken from CMake's FindProto.cmake. 
+# protoc logic taken from CMake's FindProto.cmake.
 #
 
 # cmcurlConfig.cmake - the config file for curl.
 set(protobuf_INCLUDE_DIRS "@PROTOBUF_INCLUDE_DIRS@")
-set(protobuf_EXPORTS_FILE "@PROTOBUF_EXPORTS_FILE@")
 
-include("${protobuf_EXPORTS_FILE}")
+if(NOT TARGET protobuf)
+  include("@protobuf_TARGETS_DIR@/ProtobufTargets.cmake")
+endif()
 
 #-------------------------------------------------------------------------------
 # Macro to call protoc on multiple proto files
