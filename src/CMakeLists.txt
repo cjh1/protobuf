@@ -318,6 +318,8 @@ IF(NOT CMAKE_CROSSCOMPILING)
 
    set_target_properties(protoc_compiler PROPERTIES
                          OUTPUT_NAME     protoc)
+   set_target_properties(protoc_lib PROPERTIES
+                         OUTPUT_NAME     protoc)
    target_link_libraries(protoc_compiler
                          protoc_lib
                          ${THREAD_LINK_LIB})
