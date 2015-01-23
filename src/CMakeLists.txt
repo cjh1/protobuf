@@ -318,6 +318,8 @@ IF(NOT CMAKE_CROSSCOMPILING)
 
    set_target_properties(protoc_compiler PROPERTIES
                          OUTPUT_NAME     protoc)
+   set_target_properties(protoc_lib PROPERTIES
+                         OUTPUT_NAME     protoc)
    target_link_libraries(protoc_compiler
                          protoc_lib
                          ${THREAD_LINK_LIB})
@@ -341,6 +343,8 @@ install (TARGETS protobuf protobuf-lite protoc_lib protoc_compiler
   RUNTIME DESTINATION ${PROTOBUF_INSTALL_BIN_DIR} COMPONENT Runtime
   LIBRARY DESTINATION ${PROTOBUF_INSTALL_LIB_DIR} COMPONENT Runtime
   ARCHIVE DESTINATION ${PROTOBUF_INSTALL_LIB_DIR} COMPONENT Development)
+
+install (DIRECTORY google DESTINATION ${PROTOBUF_INSTALL_INCLUDE_DIR} FILES_MATCHING PATTERN "*.h")
 
 IF(COMPILE_TOOLS_TARGET)
   ADD_DEPENDENCIES(${COMPILE_TOOLS_TARGET} protoc_compiler)
